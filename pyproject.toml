@@ -44,9 +44,9 @@ dev = [
 socrates = "src.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/agentforce314/socrates"
-Repository = "https://github.com/agentforce314/socrates"
-Documentation = "https://github.com/agentforce314/socrates#readme"
+Homepage = "https://github.com/PeterLeeXX/Socrates"
+Repository = "https://github.com/PeterLeeXX/Socrates"
+Documentation = "https://github.com/PeterLeeXX/Socrates#readme"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
