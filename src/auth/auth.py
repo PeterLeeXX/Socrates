@@ -1,6 +1,6 @@
-"""API key management matching TypeScript auth.ts.
+"""
 
-Load order: env var 鈫?config file 鈫?keychain.
+Load order: env var -> config file -> keychain.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ _GEMINI_KEY_ENV_VARS = ("GEMINI_API_KEY", "GOOGLE_API_KEY")
 _OPENROUTER_KEY_ENV_VARS = ("OPENROUTER_API_KEY",)
 _DEEPSEEK_KEY_ENV_VARS = ("DEEPSEEK_API_KEY",)
 
-# Provider 鈫?env var lists
+# Provider -> env var lists
 _PROVIDER_ENV_VARS: dict[str, tuple[str, ...]] = {
     "anthropic": _ANTHROPIC_KEY_ENV_VARS,
     "openai": _OPENAI_KEY_ENV_VARS,
@@ -105,7 +105,7 @@ def validate_api_key(key: str, provider: str = "anthropic") -> bool:
     pattern = _KEY_PATTERNS.get(provider)
     if pattern:
         return bool(pattern.match(key))
-    # Unknown provider 鈥?just check non-empty
+    # Unknown provider - just check non-empty
     return len(key) >= 10
 
 

@@ -467,16 +467,16 @@ class TestSkillTool(ToolSystemTests):
             self.assertIn("Hello bob!", out["prompt"])
             self.assertEqual(out["loadedFrom"], "user")
 
-    def test_skill_runs_legacy_python_skill(self) -> None:
+    def test_skill_rejects_python_skill_shape(self) -> None:
         skills_dir = self.root / "skills"
         skills_dir.mkdir(parents=True, exist_ok=True)
-        (skills_dir / "legacy.py").write_text(
+        (skills_dir / "old.py").write_text(
             "def run(input, context):\n    return 'hi ' + input.get('name','world')\n",
             encoding="utf-8",
         )
         with patch.dict(os.environ, {"SOCRATES_SKILLS_DIR": str(skills_dir)}):
-            out = SkillTool.call({"name": "legacy", "input": {"name": "bob"}}, self.ctx).output
-            self.assertEqual(out["output"], "hi bob")
+            with self.assertRaises(Exception):
+                SkillTool.call({"name": "old", "input": {"name": "bob"}}, self.ctx)
 
 
 class TestNewParityTools(ToolSystemTests):

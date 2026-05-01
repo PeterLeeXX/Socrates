@@ -68,10 +68,10 @@ class OpenRouterProvider(OpenAICompatibleProvider):
     def get_available_models(self) -> list[str]:
         """Return a curated list of popular OpenRouter model IDs.
 
-        OpenRouter supports hundreds of models; this list is a starting point 鈥?        any valid ``vendor/model`` ID accepted by OpenRouter can be used.
+        OpenRouter supports hundreds of models; this list is a starting point - any valid ``vendor/model`` ID accepted by OpenRouter can be used.
         """
         return [
-            # DeepSeek V4 (latest, strongest 鈥?top of the list)
+            # DeepSeek V4 (latest, strongest - top of the list)
             "deepseek/deepseek-v4-pro",
             "deepseek/deepseek-v4-flash",
             # Anthropic
@@ -97,7 +97,7 @@ class OpenRouterProvider(OpenAICompatibleProvider):
             # Mistral
             "mistralai/mistral-large",
             "mistralai/mixtral-8x22b-instruct",
-            # DeepSeek (V3.x line 鈥?V4 is at top of list)
+            # DeepSeek (V3.x line - V4 is at top of list)
             "deepseek/deepseek-v3.2",
             "deepseek/deepseek-v3.2-speciale",
             "deepseek/deepseek-v3.1-terminus",

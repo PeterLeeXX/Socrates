@@ -1,6 +1,5 @@
 """Swarm permission synchronization.
 
-Mirrors TypeScript swarm/permissions.ts — synchronizes permission decisions
 across teammates so one approval applies to all.
 """
 from __future__ import annotations

@@ -8,7 +8,6 @@ from unittest.mock import patch
 import pytest
 
 from src.context_system.prompt_assembly import (
-    _IDENTITY_PROMPT,
     _INTRO_SECTION,
     _SYSTEM_SECTION,
     _DOING_TASKS_SECTION,
@@ -55,17 +54,13 @@ class TestBuildFullSystemPrompt:
         cache.invalidate_all()
 
     def test_basic_prompt_has_intro(self):
-        """Module 1: Intro section matches TS getSimpleIntroSection()."""
+        """The prompt includes the intro section."""
         prompt = build_full_system_prompt(use_cache=False)
         assert "interactive agent" in prompt
         assert "software engineering tasks" in prompt
 
-    def test_identity_prompt_backward_compat(self):
-        """_IDENTITY_PROMPT is an alias for _INTRO_SECTION."""
-        assert _IDENTITY_PROMPT is _INTRO_SECTION
-
     def test_has_all_seven_static_modules(self):
-        """All 7 TS system prompt modules are present."""
+        """All static system prompt modules are present."""
         prompt = build_full_system_prompt(use_cache=False)
         # Module 1: Intro
         assert "interactive agent" in prompt

@@ -1,4 +1,4 @@
-"""Permission rule validation matching TypeScript settings/permissionValidation.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

@@ -1,6 +1,5 @@
 from .claude import StreamEvent, call_model, tool_to_api_schema
 from .errors import (
-    FallbackTriggeredError,
     MaxOutputTokensError,
     OverloadedError,
     PromptTooLongError,
@@ -14,7 +13,6 @@ from .tool_normalization import normalize_tool_arguments
 
 __all__ = [
     "CannotRetryError",
-    "FallbackTriggeredError",
     "MaxOutputTokensError",
     "NonNullableUsage",
     "OverloadedError",

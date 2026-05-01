@@ -1,6 +1,5 @@
 """Deep link handling.
 
-Mirrors TypeScript utils/deepLink.ts — parses and constructs deep links
 for sharing prompts, sessions, and configurations.
 """
 from __future__ import annotations

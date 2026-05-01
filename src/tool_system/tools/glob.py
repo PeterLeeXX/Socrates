@@ -1,4 +1,4 @@
-"""Glob tool — ripgrep-backed file pattern matching with stdlib fallback."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 
@@ -120,9 +120,9 @@ def _glob_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
     )
 
 
-_GLOB_PROMPT = """- Fast file pattern matching tool that works with any codebase size
+_GLOB_PROMPT = """File pattern matching tool.
+
 - Supports glob patterns like "**/*.js" or "src/**/*.ts"
-- Returns matching file paths sorted by modification time
 - Use this tool when you need to find files by name patterns
 - When you are doing an open ended search that may require multiple rounds of globbing and grepping, use the Agent tool instead"""
 

@@ -1,6 +1,5 @@
 """Teammate spawning and lifecycle management.
 
-Mirrors TypeScript swarm/teammate.ts — manages the lifecycle of teammate
 processes including creation, monitoring, and termination.
 """
 from __future__ import annotations

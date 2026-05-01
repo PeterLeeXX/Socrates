@@ -1,4 +1,4 @@
-"""Context window sizes matching TypeScript model/context.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

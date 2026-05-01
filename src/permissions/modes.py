@@ -50,9 +50,6 @@ def initial_permission_mode_from_cli(
 ) -> PermissionMode:
     """Resolve the effective :class:`PermissionMode` from CLI flags + settings.
 
-    Mirrors ``initialPermissionModeFromCLI`` in
-    ``typescript/src/utils/permissions/permissionSetup.ts:690``.
-
     Priority order (first match wins):
 
     1. ``--dangerously-skip-permissions`` -> ``bypassPermissions``
@@ -78,10 +75,6 @@ def initial_permission_mode_from_cli(
 def has_allow_bypass_permissions_mode() -> bool:
     """Return True if any trusted settings source enables bypass mode availability.
 
-    Mirrors ``hasAllowBypassPermissionsMode`` in
-    ``typescript/src/utils/settings/settings.ts:897``.
-
-    The TS reference reads ``permissions.allowBypassPermissionsMode`` from
     user, local, flag, and policy settings — projectSettings is intentionally
     excluded because a malicious project could otherwise auto-enable bypass.
 

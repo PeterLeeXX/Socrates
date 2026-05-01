@@ -1,9 +1,8 @@
-"""Process-wide session state mirroring ``typescript/src/bootstrap/state.ts``.
+"""
 
 Only the small slice of state needed to gate tool availability is modeled for
 now: whether the current process is running an interactive REPL session or
 a headless/SDK-style invocation. The default is ``isInteractive = False`` which
-matches the TypeScript default and is flipped to ``True`` by ``start_repl``.
 """
 
 from __future__ import annotations

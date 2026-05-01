@@ -46,7 +46,7 @@ from src.services.compact.tool_result_budget import apply_tool_result_budget
 from src.services.compact.snip_compact import snip_compact
 from src.context_system.microcompact import (
     microcompact_typed_messages,
-    microcompact_messages,
+    microcompact_api_messages,
     strip_images_from_messages,
 )
 
@@ -130,7 +130,6 @@ class TestEndToEndPipeline(unittest.TestCase):
             snip_keep_recent=3,
             mc_keep_recent=3,
             context_window=1_000,
-            autocompact_threshold=0.1,
             autocompact_tracking=tracking,
             provider=provider,
             model="test-model",
@@ -244,7 +243,7 @@ class TestBackwardCompatCompactService(unittest.TestCase):
         self.assertGreater(len(result.summary_text), 0)
 
     def test_old_microcompact_backward_compat(self):
-        """Dict-based microcompact_messages still works."""
+        """API dict microcompact works."""
         messages = [
             {
                 "type": "assistant",
@@ -271,7 +270,7 @@ class TestBackwardCompatCompactService(unittest.TestCase):
                 ],
             },
         ]
-        result, saved = microcompact_messages(messages, keep_recent=1)
+        result, saved = microcompact_api_messages(messages, keep_recent=1)
         self.assertIsInstance(result, list)
         # Should have cleared t1's result
         self.assertGreater(saved, 0)

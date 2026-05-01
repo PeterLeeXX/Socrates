@@ -1,4 +1,4 @@
-"""Tool hooks — mirrors TypeScript toolHooks.ts.
+"""
 
 Pre/Post tool use hooks and permission resolution.
 Hooks are user-defined scripts that run before/after tool execution.

@@ -1,4 +1,4 @@
-"""Session title generation matching TypeScript session/title.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

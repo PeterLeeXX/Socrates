@@ -1,13 +1,10 @@
 """
-System prompt assembly 鈥?aligned with typescript/src/utils/queryContext.ts.
-
 Provides fetch_system_prompt_parts() which concurrently fetches:
   - default system prompt sections
   - user context (CLAUDE.md + date)
   - system context (git status)
 
 Also provides append_system_context() and prepend_user_context() matching
-typescript/src/utils/api.ts.
 """
 
 from __future__ import annotations
@@ -44,7 +41,6 @@ def clear_context_caches() -> None:
     Clear all memoized context caches.
 
     Call after compact to ensure fresh context on next turn.
-    Mirrors TS pattern where getUserContext/getSystemContext are memoized
     and cleared on compact.
     """
     global _user_context_cache, _system_context_cache
@@ -55,7 +51,6 @@ def clear_context_caches() -> None:
 
 
 # ---------------------------------------------------------------------------
-# getUserContext 鈥?mirrors TS context.ts getUserContext
 # ---------------------------------------------------------------------------
 
 async def get_user_context(
@@ -64,7 +59,6 @@ async def get_user_context(
     """
     Get memoized user context: CLAUDE.md content + current date.
 
-    Mirrors TS getUserContext from context.ts.
     Returns dict with keys: claudeMd, currentDate.
     """
     global _user_context_cache
@@ -91,7 +85,6 @@ async def get_user_context(
 
 
 # ---------------------------------------------------------------------------
-# getSystemContext 鈥?mirrors TS context.ts getSystemContext
 # ---------------------------------------------------------------------------
 
 async def get_system_context(
@@ -100,7 +93,6 @@ async def get_system_context(
     """
     Get memoized system context: git status.
 
-    Mirrors TS getSystemContext from context.ts.
     Returns dict with key: gitStatus.
     Skipped when git instructions are disabled.
     """
@@ -124,7 +116,6 @@ async def get_system_context(
 
 
 # ---------------------------------------------------------------------------
-# fetchSystemPromptParts 鈥?mirrors TS queryContext.ts fetchSystemPromptParts
 # ---------------------------------------------------------------------------
 
 async def fetch_system_prompt_parts(
@@ -134,7 +125,6 @@ async def fetch_system_prompt_parts(
     """
     Fetch the three context pieces that form the API cache-key prefix.
 
-    Mirrors TS fetchSystemPromptParts from queryContext.ts.
     When custom_system_prompt is set, the default prompt build and
     system context are skipped.
     """
@@ -167,7 +157,6 @@ async def fetch_system_prompt_parts(
 
 
 # ---------------------------------------------------------------------------
-# appendSystemContext 鈥?mirrors TS api.ts appendSystemContext
 # ---------------------------------------------------------------------------
 
 def append_system_context(
@@ -177,7 +166,6 @@ def append_system_context(
     """
     Append system context (git status) to system prompt.
 
-    Mirrors TS appendSystemContext from api.ts.
     """
     if isinstance(system_prompt, list):
         parts = list(system_prompt)
@@ -194,7 +182,6 @@ def append_system_context(
 
 
 # ---------------------------------------------------------------------------
-# prependUserContext 鈥?mirrors TS api.ts prependUserContext
 # ---------------------------------------------------------------------------
 
 def prepend_user_context(
@@ -204,7 +191,6 @@ def prepend_user_context(
     """
     Prepend a <system-reminder> user message with CLAUDE.md + date.
 
-    Mirrors TS prependUserContext from api.ts.
     """
     if not context:
         return messages
@@ -311,27 +297,24 @@ def build_full_system_prompt(
     use_cache: bool = True,
 ) -> str:
     """
-    Build the full system prompt matching TypeScript getSystemPrompt().
-
-    Static sections (cacheable, orders 0-6) 鈥?mirrors TS prompts.ts:
-    0. Intro 鈥?identity + security (getSimpleIntroSection)
-    1. System 鈥?behavior norms (getSimpleSystemSection)
-    2. Doing tasks 鈥?coding philosophy (getSimpleDoingTasksSection)
-    3. Actions 鈥?cautious operations (getActionsSection)
-    4. Using tools 鈥?tool routing (getUsingYourToolsSection)
+    0. Intro - identity + security (getSimpleIntroSection)
+    1. System - behavior norms (getSimpleSystemSection)
+    2. Doing tasks - coding philosophy (getSimpleDoingTasksSection)
+    3. Actions - cautious operations (getActionsSection)
+    4. Using tools - tool routing (getUsingYourToolsSection)
     5. Tone and style (getSimpleToneAndStyleSection)
     6. Output efficiency (getOutputEfficiencySection)
 
-    Dynamic sections (orders 10+) 鈥?vary per session/request:
-    10. Tool documentation 鈥?per-tool prompts (optional)
-    20. Environment info 鈥?OS, shell, CWD, date/time, user
-    30. MCP instructions 鈥?server capabilities
-    40. Agent instructions 鈥?definitions and usage
-    50. Skill listing 鈥?available skills
-    60. Output style 鈥?additional configured style overlay
-    70. Plan mode 鈥?plan mode instructions
-    80. Non-interactive mode 鈥?headless instructions
-    90. Tool restrictions 鈥?availability constraints
+    Dynamic sections (orders 10+) - vary per session/request:
+    10. Tool documentation - per-tool prompts (optional)
+    20. Environment info - OS, shell, CWD, date/time, user
+    30. MCP instructions - server capabilities
+    40. Agent instructions - definitions and usage
+    50. Skill listing - available skills
+    60. Output style - additional configured style overlay
+    70. Plan mode - plan mode instructions
+    80. Non-interactive mode - headless instructions
+    90. Tool restrictions - availability constraints
     """
     if custom_system_prompt:
         base = custom_system_prompt
@@ -340,8 +323,6 @@ def build_full_system_prompt(
         return base
 
     sections: list[SystemPromptSection] = []
-
-    # --- Static modules (0-6): mirrors TS getSystemPrompt() ---
 
     # 0. Intro (identity + security)
     intro = _build_intro_section(use_cache)
@@ -443,13 +424,10 @@ def build_full_system_prompt(
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# TypeScript-faithful system prompt modules
-# Mirrors getSystemPrompt() from the system prompt reference
 # 7 static modules (cacheable) + dynamic boundary + dynamic sections
 # ---------------------------------------------------------------------------
 
 # Module 1: Intro (Identity + Security)
-# Mirrors TS getSimpleIntroSection()
 _INTRO_SECTION = (
     "You are an interactive agent that helps users with software engineering tasks. "
     "Use the instructions below and the tools available to you to assist the user.\n"
@@ -468,7 +446,6 @@ _INTRO_SECTION = (
 )
 
 # Module 2: System behavior norms
-# Mirrors TS getSimpleSystemSection()
 _SYSTEM_SECTION = (
     "# System\n"
     "- All text you output outside of tool use is displayed to the user. "
@@ -493,7 +470,6 @@ _SYSTEM_SECTION = (
 )
 
 # Module 3: Task execution guidelines
-# Mirrors TS getSimpleDoingTasksSection()
 _DOING_TASKS_SECTION = (
     "# Doing tasks\n"
     "- The user will primarily request you to perform software engineering "
@@ -532,7 +508,6 @@ _DOING_TASKS_SECTION = (
 )
 
 # Module 4: Cautious operations
-# Mirrors TS getActionsSection()
 _ACTIONS_SECTION = (
     "# Executing actions with care\n"
     "\n"
@@ -566,7 +541,6 @@ _ACTIONS_SECTION = (
 )
 
 # Module 5: Tool usage guidelines
-# Mirrors TS getUsingYourToolsSection()
 _USING_TOOLS_SECTION = (
     "# Using your tools\n"
     "- Do NOT use the Bash to run commands when a relevant dedicated tool "
@@ -587,7 +561,6 @@ _USING_TOOLS_SECTION = (
 )
 
 # Module 6: Tone and style
-# Mirrors TS getSimpleToneAndStyleSection()
 _TONE_STYLE_SECTION = (
     "# Tone and style\n"
     "- Only use emojis if the user explicitly requests it. "
@@ -605,7 +578,6 @@ _TONE_STYLE_SECTION = (
 )
 
 # Module 7: Communicating with the user
-# Mirrors TS getOutputEfficiencySection() (ant path)
 _OUTPUT_EFFICIENCY_SECTION = (
     "# Communicating with the user\n"
     "When sending user-facing text, you're writing for a person, not logging "
@@ -650,12 +622,8 @@ _OUTPUT_EFFICIENCY_SECTION = (
     "These user-facing text instructions do not apply to code or tool calls."
 )
 
-# Backward-compatible alias (imported by tests)
-_IDENTITY_PROMPT = _INTRO_SECTION
-
-
 def _build_intro_section(use_cache: bool) -> SystemPromptSection | None:
-    """Module 1: Identity + Security. Mirrors TS getSimpleIntroSection()."""
+    """Project-native implementation."""
     if use_cache:
         cached = _prompt_cache.get("intro")
         if cached:
@@ -667,37 +635,33 @@ def _build_intro_section(use_cache: bool) -> SystemPromptSection | None:
     return SystemPromptSection(id="intro", content=content, cache_scope=CacheScope.GLOBAL, order=0)
 
 
-# Keep backward-compatible alias
-_build_identity_section = _build_intro_section
-
-
 def _build_system_section(use_cache: bool) -> SystemPromptSection | None:
-    """Module 2: System behavior norms. Mirrors TS getSimpleSystemSection()."""
+    """Project-native implementation."""
     return SystemPromptSection(id="system", content=_SYSTEM_SECTION, cache_scope=CacheScope.GLOBAL, order=1)
 
 
 def _build_doing_tasks_section(use_cache: bool) -> SystemPromptSection | None:
-    """Module 3: Task execution guidelines. Mirrors TS getSimpleDoingTasksSection()."""
+    """Project-native implementation."""
     return SystemPromptSection(id="doing_tasks", content=_DOING_TASKS_SECTION, cache_scope=CacheScope.GLOBAL, order=2)
 
 
 def _build_actions_section(use_cache: bool) -> SystemPromptSection | None:
-    """Module 4: Cautious operations. Mirrors TS getActionsSection()."""
+    """Project-native implementation."""
     return SystemPromptSection(id="actions", content=_ACTIONS_SECTION, cache_scope=CacheScope.GLOBAL, order=3)
 
 
 def _build_using_tools_section(use_cache: bool) -> SystemPromptSection | None:
-    """Module 5: Tool usage guidelines. Mirrors TS getUsingYourToolsSection()."""
+    """Project-native implementation."""
     return SystemPromptSection(id="using_tools", content=_USING_TOOLS_SECTION, cache_scope=CacheScope.GLOBAL, order=4)
 
 
 def _build_tone_style_section(use_cache: bool) -> SystemPromptSection | None:
-    """Module 6: Tone and style. Mirrors TS getSimpleToneAndStyleSection()."""
+    """Project-native implementation."""
     return SystemPromptSection(id="tone_style", content=_TONE_STYLE_SECTION, cache_scope=CacheScope.GLOBAL, order=5)
 
 
 def _build_output_efficiency_section(use_cache: bool) -> SystemPromptSection | None:
-    """Module 7: Output efficiency. Mirrors TS getOutputEfficiencySection()."""
+    """Project-native implementation."""
     return SystemPromptSection(id="output_efficiency", content=_OUTPUT_EFFICIENCY_SECTION, cache_scope=CacheScope.GLOBAL, order=6)
 
 

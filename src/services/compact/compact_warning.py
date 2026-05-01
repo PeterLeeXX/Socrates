@@ -1,8 +1,6 @@
 """
 Compact warning suppression state.
 
-Port of ``typescript/src/services/compact/compactWarningState.ts``.
-
 Tracks whether the "context left until autocompact" warning should be
 suppressed.  We suppress immediately after successful compaction since
 accurate token counts are unavailable until the next API response.

@@ -1,12 +1,10 @@
-"""Agent tool — launches subagents with context isolation.
-
-Mirrors typescript/src/tools/AgentTool/AgentTool.tsx.
+"""Agent tool launches subagents with context isolation.
 
 Supports three modes:
-1. **Sync child** — Parent waits for the agent to finish and returns the result.
-2. **Async background** — Agent runs independently; parent gets an agent_id back
+1. **Sync child**: Parent waits for the agent to finish and returns the result.
+2. **Async background**: Agent runs independently; parent gets an agent_id back
    immediately and can later query results via SendMessage.
-3. **Fork** — Inherits parent context for prompt cache sharing (future).
+3. **Fork**: Inherits parent context for prompt cache sharing.
 """
 from __future__ import annotations
 
@@ -36,7 +34,6 @@ from src.agent.agent_tool_utils import (
 )
 from src.agent.constants import (
     AGENT_TOOL_NAME,
-    LEGACY_AGENT_TOOL_NAME,
     ONE_SHOT_BUILTIN_AGENT_TYPES,
 )
 from src.agent.prompt import get_agent_prompt
@@ -44,7 +41,6 @@ from src.agent.run_agent import RunAgentParams, run_agent
 
 logger = logging.getLogger(__name__)
 
-# Input schema matching typescript/src/tools/AgentTool/AgentTool.tsx
 AGENT_INPUT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -64,11 +60,10 @@ AGENT_INPUT_SCHEMA: dict[str, Any] = {
         "model": {
             "type": "string",
             "description": (
-                "Optional model override for this agent. Takes precedence over "
-                "the agent definition's model frontmatter. If omitted, uses the "
-                "agent definition's model, or inherits from the parent."
+                "Optional full model ID override for this agent. Takes precedence "
+                "over the agent definition's model frontmatter. If omitted, uses "
+                "the agent definition's model, or inherits from the parent."
             ),
-            "enum": ["sonnet", "opus", "haiku"],
         },
         "run_in_background": {
             "type": "boolean",
@@ -95,8 +90,6 @@ def make_agent_tool(
     provider: Any | None = None,
 ) -> Tool:
     """Build the Agent tool.
-
-    Mirrors the AgentTool definition from typescript/src/tools/AgentTool/AgentTool.tsx.
 
     Args:
         registry: Tool registry providing the available tool pool.
@@ -155,7 +148,7 @@ def make_agent_tool(
                 name=AGENT_TOOL_NAME,
                 output={
                     "status": "error",
-                    "error": "No provider configured — agent execution unavailable.",
+                    "error": "No provider configured; agent execution unavailable.",
                 },
                 is_error=True,
             )
@@ -204,7 +197,7 @@ def make_agent_tool(
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # We're inside an async context — use a nested run
+                # We're inside an async context; use a nested run.
                 import concurrent.futures
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                     future = pool.submit(_sync_collect_agent_messages, run_params)
@@ -214,7 +207,7 @@ def make_agent_tool(
                     _collect_agent_messages(run_params)
                 )
         except RuntimeError:
-            # No event loop — create one
+            # No event loop; create one.
             agent_messages = asyncio.run(
                 _collect_agent_messages(run_params)
             )
@@ -305,7 +298,7 @@ def make_agent_tool(
         call=_agent_call,
         prompt=_agent_prompt,
         description=lambda _input: "Launch a new agent to handle a task",
-        aliases=(LEGACY_AGENT_TOOL_NAME,),
+        aliases=(),
         map_result_to_api=_map_result_to_api,
         max_result_size_chars=200_000,
         is_destructive=lambda _input: True,

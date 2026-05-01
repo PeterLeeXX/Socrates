@@ -36,7 +36,7 @@ PROVIDER_INFO: dict[str, ProviderInfo] = {
             "claude-opus-4-20250514",
             "claude-haiku-4-5",
             "claude-haiku-4-5-20251001",
-            # Legacy
+            # Claude 3 series
             "claude-3-5-sonnet-20241022",
             "claude-3-5-haiku-20241022",
             "claude-3-opus-20240229",
@@ -61,7 +61,7 @@ PROVIDER_INFO: dict[str, ProviderInfo] = {
             "gpt-5.2-nano",
             # GPT-5.3-Codex (coding-specialized)
             "gpt-5.3-codex",
-            # Legacy GPT-4 series
+            # GPT-4 series
             "gpt-4o",
             "gpt-4o-mini",
             "gpt-4-turbo",
@@ -85,7 +85,7 @@ PROVIDER_INFO: dict[str, ProviderInfo] = {
             "zai/glm-4.5",
             "zai/glm-4.6",
             "zai/glm-4.7",
-            # GLM-3 series (legacy)
+            # GLM-3 series
             "zai/glm-3-turbo",
         ],
     },
@@ -114,9 +114,6 @@ PROVIDER_INFO: dict[str, ProviderInfo] = {
             # V4 series (current)
             "deepseek-v4-pro",
             "deepseek-v4-flash",
-            # Legacy aliases (being deprecated; map to v4-flash modes)
-            "deepseek-chat",
-            "deepseek-reasoner",
         ],
     },
     "openrouter": {
@@ -124,7 +121,7 @@ PROVIDER_INFO: dict[str, ProviderInfo] = {
         "default_base_url": "https://openrouter.ai/api/v1",
         "default_model": "anthropic/claude-sonnet-4.5",
         "available_models": [
-            # DeepSeek V4 (latest, strongest 鈥?top of the list)
+            # DeepSeek V4 (latest, strongest - top of the list)
             "deepseek/deepseek-v4-pro",
             "deepseek/deepseek-v4-flash",
             # Anthropic
@@ -150,7 +147,7 @@ PROVIDER_INFO: dict[str, ProviderInfo] = {
             # Mistral
             "mistralai/mistral-large",
             "mistralai/mixtral-8x22b-instruct",
-            # DeepSeek (V3.x line 鈥?V4 is at top of list)
+            # DeepSeek (V3.x line - V4 is at top of list)
             "deepseek/deepseek-v3.2",
             "deepseek/deepseek-v3.2-speciale",
             "deepseek/deepseek-v3.1-terminus",
@@ -199,7 +196,6 @@ def get_provider_class(provider_name: str):
     raise ValueError(f"Unknown provider: {provider_name}")
 
 
-# Legacy registry for display purposes
 AVAILABLE_PROVIDERS: dict[str, str] = {k: v["label"] for k, v in PROVIDER_INFO.items()}
 
 

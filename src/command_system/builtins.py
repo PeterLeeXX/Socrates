@@ -17,18 +17,17 @@ from ..context_system.context_analyzer import (
     format_context_as_markdown,
     get_context_window_for_model,
 )
-from ..context_system.microcompact import microcompact_messages, strip_images_from_messages
+from ..context_system.microcompact import microcompact_api_messages, strip_images_from_messages
 from ..cost_tracker import CostTracker
 from ..history import HistoryLog
 from ..providers.base import BaseProvider
-from ..setup import run_setup
 from .engine import CommandContext, CommandResult, LocalCommandResult
 from .registry import CommandRegistry, get_command_registry, list_commands
 from .types import Command, CommandType, CompactionResult, LocalCommand, PromptCommand
 
 
 # Official Claude Code /init prompts (Simplified)
-NEW_INIT_PROMPT = """Set up a CLAUDE.md file for this repo. CLAUDE.md is loaded into every Claude Code session, so it must be concise 鈥?only include what Claude would get wrong without it.
+NEW_INIT_PROMPT = """Set up a CLAUDE.md file for this repo. CLAUDE.md is loaded into every Claude Code session, so it must be concise - only include what Claude would get wrong without it.
 
 ## Step 1: Ask what to set up
 
@@ -449,7 +448,7 @@ def compact_command_call(args: str, context: CommandContext) -> LocalCommandResu
         # Fall back to sync path
         return _sync_compact_fallback(context)
     except RuntimeError:
-        # No running event loop 鈥?safe to use asyncio.run
+        # No running event loop - safe to use asyncio.run
         try:
             return asyncio.run(_compact_async(args, context))
         except Exception as e:
@@ -493,7 +492,7 @@ def _sync_compact_fallback(context: CommandContext) -> LocalCommandResult:
 
         # Strip images and microcompact
         stripped = strip_images_from_messages(api_messages)
-        compacted, saved = microcompact_messages(stripped)
+        compacted, saved = microcompact_api_messages(stripped)
 
         # Find boundary position
         boundary_indices = [
@@ -528,7 +527,7 @@ def _sync_compact_fallback(context: CommandContext) -> LocalCommandResult:
 
         return LocalCommandResult(
             type="compact",
-            value=f"Compacted: removed {len(after_boundary) - 2} messages ({pre_tokens:,} tokens 鈫?~{saved} saved).",
+            value=f"Compacted: removed {len(after_boundary) - 2} messages ({pre_tokens:,} tokens -> ~{saved} saved).",
             compaction_result=CompactionResult(
                 pre_compact_count=len(messages),
                 post_compact_count=len(context.conversation.messages),

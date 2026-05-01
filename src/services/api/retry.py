@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, TypeVar
 
 from .errors import (
-    FallbackTriggeredError,
     OverloadedError,
     RateLimitError,
     categorize_retryable_api_error,
@@ -45,7 +44,6 @@ class CannotRetryError(Exception):
 class RetryOptions:
     max_retries: int = DEFAULT_MAX_RETRIES
     model: str = ""
-    fallback_model: str | None = None
     thinking_enabled: bool = False
     fast_mode: bool = False
     signal: Any = None
@@ -118,16 +116,6 @@ async def with_retry(
             if is_overloaded_error(error):
                 consecutive_529_errors += 1
                 if consecutive_529_errors > MAX_529_RETRIES:
-                    if options.fallback_model and options.fallback_model != options.model:
-                        retry_context.model = options.fallback_model
-                        consecutive_529_errors = 0
-                        if on_status:
-                            on_status(RetryStatusMessage(
-                                message=f"Falling back to {options.fallback_model} after {MAX_529_RETRIES} overloaded errors",
-                                attempt=attempt,
-                                error_type="fallback",
-                            ))
-                        continue
                     raise CannotRetryError(error, retry_context) from error
             else:
                 consecutive_529_errors = 0

@@ -1,6 +1,5 @@
 """CLI exit helpers.
 
-Port of ``typescript/src/cli/exit.ts``. Centralizes the ``print + exit`` block
 copy-pasted across subcommand handlers and gives callers a ``NoReturn`` type
 so control-flow analysis narrows correctly after the call.
 """

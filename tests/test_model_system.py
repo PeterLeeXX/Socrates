@@ -1,10 +1,9 @@
-"""Tests for R2-WS-6: Model system — aliases, configs, capabilities, validation, bedrock."""
+"""Tests for the model system."""
 
 from __future__ import annotations
 
 import pytest
 
-from src.models.aliases import MODEL_ALIASES, resolve_alias
 from src.models.configs import MODEL_CONFIGS, ModelConfig, get_model_config
 from src.models.capabilities import (
     ModelCapabilities,
@@ -14,30 +13,11 @@ from src.models.capabilities import (
     supports_vision,
     supports_computer_use,
 )
-from src.models.model import resolve_model, display_name, canonical_model_name, deprecation_warning
+from src.models.model import resolve_model, display_name, canonical_model_name
 from src.models.validation import validate_model_name, is_model_allowed, _matches_pattern
 from src.models.bedrock import BEDROCK_MODEL_MAP, to_bedrock_model_id, from_bedrock_model_id
 from src.models.context import get_context_window_for_model, get_model_max_output_tokens
 from src.models.agent_routing import get_model_for_agent
-
-
-class TestAliases:
-    def test_resolve_known_alias(self):
-        assert resolve_alias("sonnet") == "claude-sonnet-4-20250514"
-        assert resolve_alias("opus") == "claude-opus-4-20250514"
-        assert resolve_alias("haiku") == "claude-3-5-haiku-20241022"
-
-    def test_resolve_case_insensitive(self):
-        assert resolve_alias("Sonnet") == "claude-sonnet-4-20250514"
-        assert resolve_alias("OPUS") == "claude-opus-4-20250514"
-
-    def test_resolve_unknown_returns_input(self):
-        assert resolve_alias("gpt-4o") == "gpt-4o"
-        assert resolve_alias("unknown-model") == "unknown-model"
-
-    def test_shortcut_aliases(self):
-        assert resolve_alias("s4") == "claude-sonnet-4-20250514"
-        assert resolve_alias("o4") == "claude-opus-4-20250514"
 
 
 class TestModelConfigs:
@@ -68,13 +48,6 @@ class TestModelConfigs:
         # Should match on prefix
         assert cfg is not None or cfg is None  # Prefix may or may not match depending on format
 
-    def test_deprecated_model_flag(self):
-        cfg = get_model_config("claude-3-5-sonnet-20240620")
-        assert cfg is not None
-        assert cfg.is_deprecated is True
-        assert cfg.deprecation_message != ""
-
-
 class TestCapabilities:
     def test_sonnet_4_capabilities(self):
         caps = get_model_capabilities("claude-sonnet-4-20250514")
@@ -99,8 +72,8 @@ class TestCapabilities:
 
 
 class TestModelResolution:
-    def test_resolve_alias(self):
-        assert resolve_model("sonnet") == "claude-sonnet-4-20250514"
+    def test_resolve_model_returns_input(self):
+        assert resolve_model("sonnet") == "sonnet"
 
     def test_resolve_canonical(self):
         assert resolve_model("claude-sonnet-4-20250514") == "claude-sonnet-4-20250514"
@@ -114,23 +87,12 @@ class TestModelResolution:
         assert len(name) > 0
 
     def test_canonical_model_name(self):
-        assert canonical_model_name("sonnet") == "claude-sonnet-4-20250514"
-
-    def test_deprecation_warning_deprecated(self):
-        warning = deprecation_warning("claude-3-5-sonnet-20240620")
-        assert warning is not None
-        assert "instead" in warning.lower()
-
-    def test_deprecation_warning_not_deprecated(self):
-        assert deprecation_warning("claude-sonnet-4-20250514") is None
+        assert canonical_model_name("sonnet") == "sonnet"
 
 
 class TestValidation:
     def test_valid_known_model(self):
         assert validate_model_name("claude-sonnet-4-20250514") is True
-
-    def test_valid_alias(self):
-        assert validate_model_name("sonnet") is True
 
     def test_valid_third_party(self):
         assert validate_model_name("gpt-4o") is True

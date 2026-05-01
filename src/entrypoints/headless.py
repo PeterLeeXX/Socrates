@@ -1,6 +1,5 @@
 """Headless (non-interactive) entrypoint.
 
-Port of ``typescript/src/cli/print.ts``, scoped to the slice that matters for
 Phase 1: run a single prompt (or a stream of prompts via stream-json stdin)
 through the agent loop and emit the response in the requested output format.
 
@@ -11,12 +10,12 @@ events. This module adapts those events to the CLI protocol in
 
 Design notes
 ------------
-* No Rich / prompt_toolkit imports 鈥?headless mode must run on plain pipes
+* No Rich / prompt_toolkit imports - headless mode must run on plain pipes
   (CI, SDK clients, tests) without a TTY.
 * Tool permission handling is driven by ``--dangerously-skip-permissions``:
   when set, tools run without gating; otherwise the default ``ToolContext``
   mode (``bypassPermissions``) still applies but *interactive* permission
-  prompts auto-deny 鈥?we never ``input()`` in headless mode.
+  prompts auto-deny - we never ``input()`` in headless mode.
 * The agent loop is synchronous; we call it inside ``run_headless`` and
   translate events to NDJSON on the fly.
 """
@@ -70,13 +69,6 @@ class HeadlessOptions:
     provider_name: str | None = None
     model: str | None = None
     max_turns: int = 20
-    # ``skip_permissions`` is a backward-compat alias for the boolean form
-    # of ``--dangerously-skip-permissions``. ``permission_mode`` and
-    # ``is_bypass_permissions_mode_available`` were added in round 5 to
-    # mirror the TS reference's resolved state. When ``skip_permissions``
-    # is True we treat it as ``permission_mode='bypassPermissions'`` and
-    # ``is_bypass_permissions_mode_available=True``.
-    skip_permissions: bool = False
     permission_mode: str = "default"
     is_bypass_permissions_mode_available: bool = False
     allowed_tools: tuple[str, ...] = ()
@@ -146,20 +138,11 @@ def run_headless(options: HeadlessOptions) -> int:
 
     workspace_root = options.workspace_root or Path.cwd()
 
-    # Compute the effective permission context. ``skip_permissions=True`` is
-    # the legacy alias and means "user passed --dangerously-skip-permissions";
-    # ``permission_mode`` / ``is_bypass_permissions_mode_available`` are the
-    # round-5 fields. When skip_permissions wins, force bypass mode + bypass
-    # availability so the registry's ``has_permissions_to_use_tool`` check
-    # short-circuits to ``allow``.
+    # Compute the effective permission context.
     from src.permissions.types import ToolPermissionContext
 
-    if options.skip_permissions:
-        effective_mode: str = "bypassPermissions"
-        bypass_available = True
-    else:
-        effective_mode = options.permission_mode or "default"
-        bypass_available = bool(options.is_bypass_permissions_mode_available)
+    effective_mode = options.permission_mode or "default"
+    bypass_available = bool(options.is_bypass_permissions_mode_available)
 
     tool_context = ToolContext(
         workspace_root=workspace_root,
@@ -169,7 +152,7 @@ def run_headless(options: HeadlessOptions) -> int:
         ),
     )
     tool_context.options.is_non_interactive_session = True
-    if options.skip_permissions or effective_mode == "bypassPermissions":
+    if effective_mode == "bypassPermissions":
         tool_context.allow_docs = True
         tool_context.permission_handler = None
     else:

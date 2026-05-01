@@ -121,7 +121,7 @@ def _strip_tags(s: str) -> str:
 
 
 def _ddg_html_search(query: str, num: int = 10) -> list[dict[str, str]]:
-    """Search DuckDuckGo via HTML scraping (legacy fallback)."""
+    """Search DuckDuckGo via HTML scraping."""
     url = "https://duckduckgo.com/html/?" + urllib.parse.urlencode({"q": query})
     req = urllib.request.Request(url, headers={"User-Agent": "socrates/0.1"})
     with urllib.request.urlopen(req, timeout=15) as resp:

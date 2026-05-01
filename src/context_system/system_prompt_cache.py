@@ -1,4 +1,4 @@
-"""System prompt section-based caching matching TypeScript utils/queryContext.ts.
+"""
 
 Provides per-section caching with TTL and scope (global vs per-request).
 """

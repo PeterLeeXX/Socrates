@@ -86,30 +86,30 @@ class TestStripImagesFromMessages(unittest.TestCase):
 
 
 class TestMicrocompactMessages(unittest.TestCase):
-    """Tests for microcompact_messages()."""
+    """Tests for microcompact_api_messages()."""
 
     def test_no_messages_returns_unchanged(self):
         """Empty message list returns unchanged."""
-        from src.context_system.microcompact import microcompact_messages
+        from src.context_system.microcompact import microcompact_api_messages
         messages = []
-        result, saved = microcompact_messages(messages)
+        result, saved = microcompact_api_messages(messages)
         self.assertEqual(result, [])
         self.assertEqual(saved, 0)
 
     def test_no_tool_results_returns_unchanged(self):
         """Messages without tool results pass through unchanged."""
-        from src.context_system.microcompact import microcompact_messages
+        from src.context_system.microcompact import microcompact_api_messages
         messages = [
             {"role": "user", "content": "Hello"},
             {"role": "assistant", "content": "Hi there!"},
         ]
-        result, saved = microcompact_messages(messages)
+        result, saved = microcompact_api_messages(messages)
         self.assertEqual(result, messages)
         self.assertEqual(saved, 0)
 
     def test_keeps_recent_tool_results(self):
         """Recent tool results (within keep_recent) are not cleared."""
-        from src.context_system.microcompact import microcompact_messages, CLEARED_MESSAGE
+        from src.context_system.microcompact import microcompact_api_messages, CLEARED_MESSAGE
         messages = [
             {
                 "type": "assistant",
@@ -137,7 +137,7 @@ class TestMicrocompactMessages(unittest.TestCase):
             },
         ]
         # keep_recent=3, we have 2 tool calls, none should be cleared
-        result, saved = microcompact_messages(messages, keep_recent=3)
+        result, saved = microcompact_api_messages(messages, keep_recent=3)
         self.assertEqual(saved, 0)
         # Check tool results are unchanged
         for msg in result:
@@ -148,7 +148,7 @@ class TestMicrocompactMessages(unittest.TestCase):
 
     def test_clears_old_tool_results(self):
         """Old tool results beyond keep_recent are cleared."""
-        from src.context_system.microcompact import microcompact_messages, CLEARED_MESSAGE
+        from src.context_system.microcompact import microcompact_api_messages, CLEARED_MESSAGE
         messages = [
             {
                 "type": "assistant",
@@ -188,7 +188,7 @@ class TestMicrocompactMessages(unittest.TestCase):
             },
         ]
         # keep_recent=1, so tool1 and tool2 should be cleared
-        result, saved = microcompact_messages(messages, keep_recent=1)
+        result, saved = microcompact_api_messages(messages, keep_recent=1)
         self.assertGreater(saved, 0)
 
         # Check that old tool results are cleared
@@ -203,7 +203,7 @@ class TestMicrocompactMessages(unittest.TestCase):
 
     def test_non_compactable_tools_not_cleared(self):
         """Tool results from non-compactable tools are not cleared."""
-        from src.context_system.microcompact import microcompact_messages, CLEARED_MESSAGE
+        from src.context_system.microcompact import microcompact_api_messages, CLEARED_MESSAGE
         messages = [
             {
                 "type": "assistant",
@@ -231,7 +231,7 @@ class TestMicrocompactMessages(unittest.TestCase):
             },
         ]
         # NotCompactable is not in COMPACTABLE_TOOL_NAMES, so all should remain
-        result, saved = microcompact_messages(messages, keep_recent=1)
+        result, saved = microcompact_api_messages(messages, keep_recent=1)
         self.assertEqual(saved, 0)
 
 

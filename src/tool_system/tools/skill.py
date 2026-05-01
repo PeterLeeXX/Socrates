@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import importlib
 import json
-import os
-import sys
-from pathlib import Path
 from typing import Any
 
 from ..build_tool import Tool, ValidationResult, build_tool
@@ -14,7 +10,7 @@ from ..protocol import ToolResult
 
 
 # ---------------------------------------------------------------------------
-# Prompt (ported from TS SkillTool/prompt.ts getPrompt)
+# Prompt
 # ---------------------------------------------------------------------------
 
 SKILL_TOOL_PROMPT = """\
@@ -40,24 +36,18 @@ Important:
 
 
 # ---------------------------------------------------------------------------
-# Input validation (ported from TS SkillTool/SkillTool.ts validateInput)
+# Input validation
 # ---------------------------------------------------------------------------
 
 def _validate_skill_input(tool_input: dict[str, Any], context: ToolContext) -> ValidationResult:
     """Validate skill input before execution.
 
-    Error codes (matching TypeScript):
       1 - Missing or invalid skill name
       2 - Unknown skill (not found in registry)
       4 - Skill has disable_model_invocation set
       5 - Skill is not a prompt-based skill
     """
     skill = tool_input.get("skill")
-
-    # Legacy path: if using 'name' for legacy .py skills, skip validation
-    # (backward compat -- legacy skills don't go through the registry)
-    if not skill and tool_input.get("name"):
-        return ValidationResult.ok()
 
     if not skill or not isinstance(skill, str):
         return ValidationResult.fail(
@@ -73,7 +63,7 @@ def _validate_skill_input(tool_input: dict[str, Any], context: ToolContext) -> V
             error_code=1,
         )
 
-    # Remove leading slash if present (for compatibility)
+    # Remove a leading slash when the user typed a slash command name.
     command_name = trimmed.lstrip("/")
 
     # Look up in the skill registry
@@ -106,8 +96,7 @@ def _validate_skill_input(tool_input: dict[str, Any], context: ToolContext) -> V
 
 
 # ---------------------------------------------------------------------------
-# mapResultToApi (ported from TS SkillTool/SkillTool.ts
-#     mapToolResultToToolResultBlockParam)
+# API result mapping
 # ---------------------------------------------------------------------------
 
 def _skill_map_result_to_api(output: Any, tool_use_id: str) -> dict[str, Any]:
@@ -129,14 +118,12 @@ def _skill_map_result_to_api(output: Any, tool_use_id: str) -> dict[str, Any]:
                 "content": f'Skill "{command_name}" completed (forked execution).\n\nResult:\n{result_text}',
             }
 
-        # Inline skill (default)
         return {
             "type": "tool_result",
             "tool_use_id": tool_use_id,
             "content": f"Launching skill: {command_name}",
         }
 
-    # Fallback for legacy or unexpected output shapes
     if isinstance(output, str):
         content: str | list[dict[str, Any]] = output
     else:
@@ -155,15 +142,10 @@ def _skill_map_result_to_api(output: Any, tool_use_id: str) -> dict[str, Any]:
 def _skill_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
     skill_name = tool_input.get("skill")
     if isinstance(skill_name, str) and skill_name.strip():
-        # Normalize: strip leading slash
         normalized = skill_name.strip().lstrip("/")
         return _run_markdown_skill(normalized, tool_input.get("args", ""), context)
 
-    legacy_name = tool_input.get("name")
-    if isinstance(legacy_name, str) and legacy_name.strip():
-        return _run_legacy_python_skill(legacy_name.strip(), tool_input.get("input", {}), context)
-
-    raise ToolInputError("either 'skill' (for SKILL.md) or 'name' (for legacy .py) is required")
+    raise ToolInputError("'skill' is required")
 
 
 def _run_markdown_skill(skill_name: str, args: str, context: ToolContext) -> ToolResult:
@@ -199,8 +181,7 @@ def _run_markdown_skill(skill_name: str, args: str, context: ToolContext) -> Too
 def _build_context_modifier(skill: Any) -> Any:
     """Build a context modifier closure from skill frontmatter fields.
 
-    Returns None if no context modifications are needed. Ported from
-    TS SkillTool/SkillTool.ts contextModifier (lines 785-849).
+    Returns None if no context modifications are needed.
     """
     allowed_tools = getattr(skill, "allowed_tools", None) or []
     model = getattr(skill, "model", None)
@@ -218,44 +199,6 @@ def _build_context_modifier(skill: Any) -> Any:
 
     return _modifier
 
-
-def _run_legacy_python_skill(name: str, skill_input: dict[str, Any], context: ToolContext) -> ToolResult:
-    skills_dir = _get_skills_dir()
-    if skills_dir is None:
-        return ToolResult(name="Skill", output={"error": "no skills directory found"}, is_error=True)
-
-    py_path = skills_dir / f"{name}.py"
-    if not py_path.exists():
-        return ToolResult(name="Skill", output={"error": f"legacy skill not found: {name}"}, is_error=True)
-
-    module_name = f"_socrates_skill_{name}"
-    spec = importlib.util.spec_from_file_location(module_name, py_path)
-    if spec is None or spec.loader is None:
-        return ToolResult(name="Skill", output={"error": f"cannot load skill: {name}"}, is_error=True)
-
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = mod
-    spec.loader.exec_module(mod)
-    run_fn = getattr(mod, "run", None)
-    if not callable(run_fn):
-        return ToolResult(name="Skill", output={"error": f"skill has no run() function: {name}"}, is_error=True)
-
-    result = run_fn(skill_input, context)
-    return ToolResult(name="Skill", output={"output": result})
-
-
-def _get_skills_dir() -> Path | None:
-    env = os.environ.get("SOCRATES_SKILLS_DIR")
-    if env:
-        p = Path(env).expanduser().resolve()
-        if p.is_dir():
-            return p
-    for d in (Path.home() / ".socrates" / "skills", Path.home() / ".claude" / "skills"):
-        if d.is_dir():
-            return d
-    return None
-
-
 SkillTool: Tool = build_tool(
     name="Skill",
     input_schema={
@@ -269,15 +212,8 @@ SkillTool: Tool = build_tool(
                 "type": "string",
                 "description": "Optional arguments for the skill",
             },
-            "name": {
-                "type": "string",
-                "description": "(Deprecated) Legacy .py skill name",
-            },
-            "input": {
-                "type": "object",
-                "description": "(Deprecated) Legacy .py skill input object",
-            },
         },
+        "required": ["skill"],
     },
     call=_skill_call,
     prompt=SKILL_TOOL_PROMPT,

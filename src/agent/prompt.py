@@ -1,6 +1,5 @@
 """Agent tool prompt generation.
 
-Mirrors typescript/src/tools/AgentTool/prompt.ts.
 """
 from __future__ import annotations
 
@@ -20,7 +19,6 @@ _SEND_MESSAGE_TOOL_NAME = "SendMessage"
 def _get_tools_description(agent: AgentDefinition) -> str:
     """Build a human-readable description of an agent's available tools.
 
-    Mirrors getToolsDescription() from typescript/src/tools/AgentTool/prompt.ts.
     """
     tools = agent.tools
     disallowed = agent.disallowed_tools
@@ -42,7 +40,6 @@ def _get_tools_description(agent: AgentDefinition) -> str:
 def format_agent_line(agent: AgentDefinition) -> str:
     """Format one agent line: ``- type: whenToUse (Tools: ...)``.
 
-    Mirrors formatAgentLine() from typescript/src/tools/AgentTool/prompt.ts.
     """
     tools_desc = _get_tools_description(agent)
     return f"- {agent.agent_type}: {agent.when_to_use} (Tools: {tools_desc})"
@@ -56,7 +53,6 @@ def get_agent_prompt(
 ) -> str:
     """Build the full prompt for the Agent tool.
 
-    Mirrors getPrompt() from typescript/src/tools/AgentTool/prompt.ts.
     This text is fed to the model as the Agent tool's description, instructing
     the parent agent on how and when to spawn sub-agents.
     """
@@ -192,8 +188,6 @@ def get_agent_system_prompt(
     parent_system_prompt: str | None = None,
 ) -> str:
     """Get the system prompt for an agent.
-
-    Mirrors getAgentSystemPrompt() from typescript/src/tools/AgentTool/runAgent.ts.
 
     For built-in agents: uses the agent's own system prompt.
     For fork agents: uses the parent's system prompt.

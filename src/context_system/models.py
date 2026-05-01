@@ -1,7 +1,4 @@
 """
-Context system data models — aligned with TypeScript Claude Code architecture.
-
-TypeScript references:
   - claudemd.ts: MemoryFileInfo, MemoryType
   - context.ts: getUserContext, getSystemContext (return dict[str, str])
   - queryContext.ts: fetchSystemPromptParts return type
@@ -15,13 +12,11 @@ from typing import Literal
 
 
 # ---------------------------------------------------------------------------
-# Memory types — mirrors TS MemoryType
 # ---------------------------------------------------------------------------
 
 MemoryType = Literal["Managed", "User", "Project", "Local"]
 
 # ---------------------------------------------------------------------------
-# MemoryFileInfo — mirrors TS MemoryFileInfo from claudemd.ts
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -39,7 +34,6 @@ class MemoryFileInfo:
 
 # ---------------------------------------------------------------------------
 # SystemPromptParts — return type of fetch_system_prompt_parts()
-# Mirrors TS fetchSystemPromptParts from queryContext.ts
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -52,7 +46,6 @@ class SystemPromptParts:
 
 
 # ---------------------------------------------------------------------------
-# Max constants — mirrors TS constants
 # ---------------------------------------------------------------------------
 
 MAX_MEMORY_CHARACTER_COUNT = 40_000
@@ -65,7 +58,6 @@ MEMORY_INSTRUCTION_PROMPT = (
     "and you MUST follow them exactly as written."
 )
 
-# Text file extensions allowed for @include directives (mirrors TS TEXT_FILE_EXTENSIONS)
 TEXT_FILE_EXTENSIONS: frozenset[str] = frozenset([
     ".md", ".txt", ".text",
     ".json", ".yaml", ".yml", ".toml", ".xml", ".csv",
@@ -94,7 +86,7 @@ TEXT_FILE_EXTENSIONS: frozenset[str] = frozenset([
 
 
 # ---------------------------------------------------------------------------
-# Legacy types — kept for backward compat with workspace_snapshot.py
+# Workspace snapshot model.
 # ---------------------------------------------------------------------------
 
 @dataclass

@@ -1,4 +1,4 @@
-"""Token estimation utilities — mirrors TypeScript tokenEstimation.ts.
+"""
 
 Provides rough token counting for messages and content blocks, plus
 accurate tiktoken-based counting when available. API-based counting

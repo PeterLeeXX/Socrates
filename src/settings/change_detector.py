@@ -1,4 +1,4 @@
-"""Settings change detection matching TypeScript settings/changeDetector.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

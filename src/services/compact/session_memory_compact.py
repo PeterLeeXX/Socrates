@@ -1,11 +1,8 @@
 """
 Session-memory-based compaction.
 
-Port of ``typescript/src/services/compact/sessionMemoryCompact.ts``.
-
 Determines a safe split point for partial compaction, ensuring that
 tool_use / tool_result pairs and thinking blocks are not broken across
-the boundary. Uses token-based thresholds matching the TypeScript reference.
 """
 
 from __future__ import annotations
@@ -31,7 +28,6 @@ logger = logging.getLogger(__name__)
 class SessionMemoryCompactConfig:
     """Token-based thresholds for session memory compaction.
 
-    Matches TypeScript DEFAULT_SM_COMPACT_CONFIG.
     """
     min_tokens: int = 10_000
     min_text_block_messages: int = 5
@@ -123,7 +119,6 @@ def adjust_index_to_preserve_api_invariants(
     1. tool_use / tool_result pairs
     2. Thinking blocks that share the same message.id with kept assistant messages
 
-    Port of ``adjustIndexToPreserveAPIInvariants`` in sessionMemoryCompact.ts.
     """
     if index <= 0 or index >= len(messages):
         return index
@@ -154,7 +149,6 @@ def adjust_index_to_preserve_api_invariants(
             if tid not in tool_use_ids_in_kept
         )
 
-        # Find the assistant message(s) with matching tool_use blocks
         i = adjusted - 1
         while i >= 0 and needed_ids:
             msg = messages[i]
@@ -206,7 +200,6 @@ def calculate_messages_to_keep_index(
     - At least ``config.min_text_block_messages`` messages with text blocks
     Stops expanding if ``config.max_tokens`` is reached.
 
-    Port of ``calculateMessagesToKeepIndex`` in sessionMemoryCompact.ts.
     """
     if not messages:
         return 0
@@ -266,43 +259,6 @@ def calculate_messages_to_keep_index(
             break
 
     return adjust_index_to_preserve_api_invariants(messages, start_index)
-
-
-# ---------------------------------------------------------------------------
-# Legacy count-based API (backward compatibility)
-# ---------------------------------------------------------------------------
-
-def try_session_memory_compaction(
-    messages: list[Message],
-    target_keep_count: int,
-    config: SessionMemoryCompactConfig | None = None,
-) -> tuple[list[Message], list[Message]]:
-    """
-    Split messages into [summarize, keep] based on target_keep_count.
-
-    This is a simplified backward-compatible API. For the full token-based
-    approach, use ``calculate_messages_to_keep_index()`` directly.
-    """
-    if config is None:
-        config = SessionMemoryCompactConfig()
-
-    n = len(messages)
-    if n == 0:
-        return [], list(messages)
-
-    # Compute a split point from target_keep_count
-    split = max(0, n - target_keep_count)
-
-    # Ensure we don't exceed 75% of messages
-    max_summarize = int(n * 0.75)
-    split = min(split, max_summarize)
-
-    split = adjust_index_to_preserve_api_invariants(messages, split)
-
-    if split <= 0:
-        return [], list(messages)
-
-    return list(messages[:split]), list(messages[split:])
 
 
 # ---------------------------------------------------------------------------

@@ -91,14 +91,12 @@ class CommandRegistry:
 
     def find_commands(self, query: str, limit: int = 20) -> list[Command]:
         """
-        Find commands matching a query.
 
         Args:
             query: Search query
             limit: Maximum number of results
 
         Returns:
-            List of matching commands
         """
         query_lower = query.lower()
         matches: list[tuple[int, Command]] = []

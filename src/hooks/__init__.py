@@ -1,6 +1,5 @@
 """Hook system — PreToolUse, PostToolUse, Stop, Notification, PostSampling hook execution runtime.
 
-Mirrors TypeScript utils/hooks.ts and hooks/ directory.
 """
 
 from __future__ import annotations

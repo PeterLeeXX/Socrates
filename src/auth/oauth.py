@@ -1,4 +1,4 @@
-"""OAuth authorization code flow matching TypeScript services/oauth/.
+"""
 
 Supports PKCE, localhost callback server, token exchange, and refresh.
 """

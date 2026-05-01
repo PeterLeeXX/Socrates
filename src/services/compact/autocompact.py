@@ -1,8 +1,6 @@
 """
 Layer 5: Autocompact — full LLM summarization (last resort).
 
-Port of ``typescript/src/services/compact/autoCompact.ts``.
-
 Determines when automatic compaction should trigger based on token usage
 and context window size, then delegates to ``compact_conversation()``.
 Includes a circuit breaker to prevent infinite retry loops.
@@ -28,7 +26,6 @@ from .compact import (
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Thresholds (mirroring TypeScript autoCompact.ts)
 # ---------------------------------------------------------------------------
 
 # Reserve this many tokens for output during compaction.
@@ -50,7 +47,7 @@ MANUAL_COMPACT_BUFFER_TOKENS = 3_000
 # in a single session, wasting ~250K API calls/day globally.
 MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3
 
-# Minimum input tokens before autocompact can trigger (legacy fallback)
+# Minimum input tokens before autocompact can trigger.
 MIN_INPUT_TOKENS_FOR_AUTOCOMPACT = 10_000
 
 
@@ -102,7 +99,6 @@ def get_effective_context_window_size(
     """
     Returns the context window size minus the max output tokens for the model.
 
-    Port of ``getEffectiveContextWindowSize`` in autoCompact.ts.
     """
     reserved = min(
         max_output_tokens or MAX_OUTPUT_TOKENS_FOR_SUMMARY,
@@ -129,7 +125,6 @@ def get_auto_compact_threshold(
     """
     Compute the token threshold at which autocompact triggers.
 
-    Port of ``getAutoCompactThreshold`` in autoCompact.ts.
     """
     effective = get_effective_context_window_size(context_window, max_output_tokens)
     threshold = effective - AUTOCOMPACT_BUFFER_TOKENS
@@ -147,7 +142,6 @@ def is_auto_compact_enabled() -> bool:
     """
     Check whether autocompact is enabled.
 
-    Port of ``isAutoCompactEnabled`` in autoCompact.ts.
     """
     if _is_env_truthy("DISABLE_COMPACT"):
         return False
@@ -164,7 +158,6 @@ def calculate_token_warning_state(
     """
     Calculate the token usage warning state for UI display.
 
-    Port of ``calculateTokenWarningState`` in autoCompact.ts.
 
     Returns dict with keys:
         percent_left, is_above_warning_threshold, is_above_error_threshold,
@@ -209,14 +202,9 @@ def should_auto_compact(
     *,
     max_output_tokens: int | None = None,
     tracking: AutoCompactTracking | None = None,
-    threshold_fraction: float | None = None,
 ) -> bool:
     """
     Determine whether autocompact should trigger.
-
-    Uses the TS-aligned threshold calculation by default.
-    ``threshold_fraction`` is accepted for backward compatibility but
-    ignored when the TS-aligned calculation is available.
     """
     if not is_auto_compact_enabled():
         return False
@@ -253,7 +241,6 @@ async def auto_compact_if_needed(
     model: str,
     *,
     max_output_tokens: int | None = None,
-    threshold_fraction: float | None = None,
     tracking: AutoCompactTracking | None = None,
     custom_instructions: str | None = None,
     read_file_state: dict[str, Any] | None = None,
@@ -277,7 +264,6 @@ async def auto_compact_if_needed(
     if not should_auto_compact(
         input_token_count, context_window,
         max_output_tokens=max_output_tokens,
-        threshold_fraction=threshold_fraction,
         tracking=tracking,
     ):
         return None

@@ -225,7 +225,7 @@ class AnthropicProvider(BaseProvider):
             "claude-opus-4-20250514",
             "claude-haiku-4-5",
             "claude-haiku-4-5-20251001",
-            # Legacy
+            # Claude 3 series
             "claude-3-5-sonnet-20241022",
             "claude-3-5-haiku-20241022",
             "claude-3-opus-20240229",

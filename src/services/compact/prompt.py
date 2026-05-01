@@ -1,7 +1,6 @@
 """
 Compaction prompts and summary formatting.
 
-Port of ``typescript/src/services/compact/prompt.ts``.
 """
 
 from __future__ import annotations
@@ -11,7 +10,6 @@ from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Preamble that prevents the model from calling tools during summarization
-# (port of NO_TOOLS_PREAMBLE in prompt.ts)
 # ---------------------------------------------------------------------------
 NO_TOOLS_PREAMBLE = """\
 CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
@@ -66,7 +64,6 @@ Before providing your final summary, wrap your analysis in <analysis> tags to or
 
 # ---------------------------------------------------------------------------
 # Base compact prompt — full conversation summarization
-# (port of BASE_COMPACT_PROMPT in prompt.ts)
 # ---------------------------------------------------------------------------
 BASE_COMPACT_PROMPT = f"""\
 Your task is to create a detailed summary of the conversation so far, paying close attention to the user's explicit requests and your previous actions.
@@ -144,7 +141,7 @@ Please provide your summary based on the conversation so far, following this str
 There may be additional summarization instructions provided in the included context. If so, remember to follow these instructions when creating the above summary. Examples of instructions include:
 <example>
 ## Compact Instructions
-When summarizing the conversation focus on typescript code changes and also remember the mistakes you made and how you fixed them.
+When summarizing the conversation focus on code changes and also remember the mistakes you made and how you fixed them.
 </example>
 
 <example>
@@ -331,7 +328,6 @@ def format_compact_summary(
     Format the raw compact summary by stripping the <analysis> scratchpad
     and replacing <summary> XML tags with readable section headers.
 
-    Port of ``formatCompactSummary`` in prompt.ts.
     """
     text = raw_summary
 
@@ -379,7 +375,6 @@ def get_compact_user_summary_message(
     """
     Build the user-visible summary message inserted after compaction.
 
-    Mirrors ``getCompactUserSummaryMessage`` in the TypeScript reference.
     """
     base = (
         "This session is being continued from a previous conversation "

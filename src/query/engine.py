@@ -97,7 +97,6 @@ class QueryEngine:
                 if self._config.append_system_prompt:
                     prompt_sections.append(self._config.append_system_prompt)
             else:
-                # Build full system prompt with TS-matching 7 modules + env.
                 # Per-tool prompts are NOT in the system prompt — they're sent
                 # via the API tools parameter (tool.prompt() → description).
                 full_prompt = build_full_system_prompt(
@@ -114,7 +113,7 @@ class QueryEngine:
             return system_prompt, parts.user_context, parts.system_context
 
         except Exception:
-            # Fallback to legacy builder
+            # Fall back to the synchronous context builder.
             try:
                 context_prompt = build_context_prompt(
                     self._config.cwd,

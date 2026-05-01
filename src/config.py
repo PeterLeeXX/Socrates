@@ -1,6 +1,5 @@
 """Configuration management for Socrates.
 
-Three-level config hierarchy matching TypeScript config.ts:
   Global:  ~/.socrates/config.json
   Project: <git-root>/.claude/config.json
   Local:   <git-root>/.claude/config.local.json
@@ -145,7 +144,7 @@ def get_default_config() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# ConfigManager 鈥?three-level loading + merge
+# ConfigManager - three-level loading + merge
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -199,14 +198,14 @@ class ConfigManager:
     def save_project(self, data: dict[str, Any]) -> None:
         path = get_project_config_path(self.cwd)
         if path is None:
-            raise RuntimeError("No git root found 鈥?cannot save project config")
+            raise RuntimeError("No git root found - cannot save project config")
         _atomic_write_json(path, data)
         self._project_cache = None
 
     def save_local(self, data: dict[str, Any]) -> None:
         path = get_local_config_path(self.cwd)
         if path is None:
-            raise RuntimeError("No git root found 鈥?cannot save local config")
+            raise RuntimeError("No git root found - cannot save local config")
         _atomic_write_json(path, data)
         self._local_cache = None
 
@@ -258,7 +257,7 @@ def read_history_entries(limit: int = 100) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Backward-compatible API (used by existing code)
+# Module-level configuration helpers.
 # ---------------------------------------------------------------------------
 
 _default_manager: ConfigManager | None = None

@@ -1,8 +1,6 @@
 """
 Post-compact file and plan attachments.
 
-Port of the attachment creation logic from
-``typescript/src/services/compact/compact.ts``:
 - ``createPostCompactFileAttachments()``
 - ``createPlanAttachmentIfNeeded()``
 - ``createSkillAttachmentIfNeeded()``
@@ -177,7 +175,6 @@ def create_post_compact_file_attachments(
     Create attachment messages for recently accessed files to restore them
     after compaction.
 
-    Port of ``createPostCompactFileAttachments`` from compact.ts.
 
     Args:
         read_file_state: Mapping of filename → {content, timestamp}.
@@ -240,7 +237,6 @@ def create_plan_attachment_if_needed(
     """
     Create a plan file attachment if the plan file exists.
 
-    Port of ``createPlanAttachmentIfNeeded`` from compact.ts.
     """
     if not plan_file_path:
         return None
@@ -279,7 +275,6 @@ def create_skill_attachment_if_needed(
     """
     Create attachment for invoked skills to preserve across compaction.
 
-    Port of ``createSkillAttachmentIfNeeded`` from compact.ts.
     """
     if not invoked_skills:
         return None

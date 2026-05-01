@@ -1,6 +1,5 @@
 """Agent lifecycle management.
 
-Mirrors typescript/src/tools/AgentTool/runAgent.ts and forkedAgent.ts.
 Provides the core run_agent() async generator and filter_incomplete_tool_calls().
 """
 from __future__ import annotations
@@ -37,7 +36,6 @@ SUBAGENT_DEFAULT_MAX_TURNS = 30
 class RunAgentParams:
     """Parameters for running an agent.
 
-    Mirrors the parameters accepted by the runAgent() generator in TypeScript.
     """
     parent_context: ToolContext
     agent_definition: AgentDefinition
@@ -76,8 +74,6 @@ def resolve_permission_mode(
     is_async: bool = False,
 ) -> PermissionMode:
     """Resolve the effective permission mode for a subagent.
-
-    Mirrors the permission inheritance logic from typescript/src/tools/AgentTool/runAgent.ts.
 
     Rules:
     - Parent bypassPermissions/acceptEdits/dontAsk → parent takes precedence
@@ -121,8 +117,6 @@ def _build_permission_context(
 def filter_incomplete_tool_calls(messages: list[Message]) -> list[Message]:
     """Remove trailing assistant messages that have incomplete tool_use blocks.
 
-    Mirrors filterIncompleteToolCalls() from typescript/src/tools/AgentTool/runAgent.ts.
-
     When an agent is interrupted, the last assistant message may contain tool_use
     blocks without corresponding tool_result messages. Sending these would cause
     an API error. This function removes such trailing messages.
@@ -151,8 +145,6 @@ def filter_incomplete_tool_calls(messages: list[Message]) -> list[Message]:
 
 async def run_agent(params: RunAgentParams) -> AsyncGenerator[Message, None]:
     """Run an agent's query loop and yield messages.
-
-    Mirrors the runAgent() async generator from typescript/src/tools/AgentTool/runAgent.ts.
 
     This function:
     1. Resolves model, tools, system prompt, and permission mode
@@ -240,7 +232,6 @@ async def run_agent(params: RunAgentParams) -> AsyncGenerator[Message, None]:
     prompt_message = UserMessage(content=params.prompt)
     initial_messages: list[Message] = list(subagent_context.messages) + [prompt_message]
 
-    # Determine max turns — mirrors TS: maxTurns ?? agentDefinition.maxTurns
     # TS has no built-in fallback, but we keep a safety net to prevent runaway agents.
     max_turns = params.max_turns or agent_def.max_turns or SUBAGENT_DEFAULT_MAX_TURNS
 

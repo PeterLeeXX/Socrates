@@ -149,7 +149,6 @@ class TestCompressionPipelineLayers(unittest.TestCase):
             snip_keep_recent=100,
             mc_keep_recent=100,
             context_window=200_000,
-            autocompact_threshold=0.8,
             provider=provider,
             model="test-model",
         )
@@ -225,7 +224,6 @@ class TestCompressionPipelineAutocompact(unittest.TestCase):
             snip_keep_recent=100,
             mc_keep_recent=100,
             context_window=200_000,
-            autocompact_threshold=0.8,
             provider=provider,
             model="test-model",
         )
@@ -256,8 +254,7 @@ class TestCompressionPipelineAutocompact(unittest.TestCase):
                 snip_keep_recent=100,
                 mc_keep_recent=100,
                 context_window=200_000,
-                autocompact_threshold=0.8,
-                provider=provider,
+                    provider=provider,
                 model="test-model",
                 read_file_state={tmp_path: {"timestamp": time.time()}},
             )

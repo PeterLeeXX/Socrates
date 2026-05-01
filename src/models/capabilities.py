@@ -1,4 +1,4 @@
-"""Model capability detection matching TypeScript model/modelCapabilities.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

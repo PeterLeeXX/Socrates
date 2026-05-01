@@ -1,6 +1,5 @@
 """Managed settings path resolution for enterprise deployments.
 
-Matches TypeScript settings/managedPath.ts.
 """
 
 from __future__ import annotations

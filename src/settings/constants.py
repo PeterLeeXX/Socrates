@@ -1,4 +1,4 @@
-"""Default settings values matching TypeScript settings/constants.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

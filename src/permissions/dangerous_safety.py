@@ -1,6 +1,5 @@
 """Safety gate for ``--dangerously-skip-permissions``.
 
-Mirrors ``typescript/src/setup.ts:382-401``. The bypass flag must not be
 silently honored when the process is running with elevated privileges
 (root/sudo) outside a sandboxed environment — that combination would let
 the agent perform arbitrary destructive actions on the host.
@@ -25,7 +24,6 @@ def _is_truthy_env(value: str | None) -> bool:
 def is_sandbox_environment() -> bool:
     """True when an env var marks the process as running in a sandbox.
 
-    The TS reference checks ``IS_SANDBOX === '1'`` and the truthy form of
     ``CLAUDE_CODE_BUBBLEWRAP``. We accept the same set of truthy values
     (``isEnvTruthy`` semantics).
     """
@@ -51,15 +49,12 @@ def enforce_dangerous_skip_permissions_safety(
 ) -> None:
     """Refuse to start in bypass mode when running as root outside a sandbox.
 
-    Mirrors the safety check in ``typescript/src/setup.ts``:
-
     * Skipped on Windows (no concept of root for this check).
     * Skipped if neither ``--dangerously-skip-permissions`` nor
       ``--allow-dangerously-skip-permissions`` was passed.
     * Skipped if the process is not running as uid 0.
     * Skipped when ``IS_SANDBOX`` or ``CLAUDE_CODE_BUBBLEWRAP`` is truthy.
 
-    Otherwise prints the same error message used by the TS reference and
     raises :class:`SystemExit` with code 1 so callers can be unit-tested.
     """
     if not bypass_requested:

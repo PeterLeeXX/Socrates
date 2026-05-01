@@ -20,7 +20,6 @@ from ..types.messages import Message, SystemMessage, UserMessage
 class PreservedSegment:
     """Relink metadata for messages preserved across compaction.
 
-    Port of ``preservedSegment`` from compact.ts.
     Used by the message loader to patch parent-UUID chains so that
     preserved messages slot correctly into the post-compact conversation.
     """
@@ -155,7 +154,6 @@ def annotate_boundary_with_preserved_segment(
     """
     Annotate a compact boundary with relink metadata for messages_to_keep.
 
-    Port of ``annotateBoundaryWithPreservedSegment`` from compact.ts.
 
     ``anchor_uuid`` is the UUID of the message that sits immediately before
     keep[0] in the desired chain:

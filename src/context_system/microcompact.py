@@ -5,10 +5,7 @@ Strips images/documents from messages and clears old tool results
 when the cache is cold (time-based trigger). This reduces tokens
 sent to the API without losing the model-visible history structure.
 
-Port of ``typescript/src/services/compact/microCompact.ts``.
-
-Supports both typed ``Message`` objects (WS-1) and raw ``dict`` messages
-for backward compatibility.
+Supports typed ``Message`` objects and API-format dict messages.
 """
 
 from __future__ import annotations
@@ -38,7 +35,6 @@ IMAGE_TOKEN_SIZE = 2000
 # Marker inserted for content-cleared tool results
 CLEARED_MESSAGE = "[Old tool result content cleared]"
 
-# Tools eligible for microcompact (same as TypeScript COMPACTABLE_TOOLS)
 COMPACTABLE_TOOL_NAMES: frozenset[str] = frozenset([
     "Read",
     "Bash",
@@ -53,7 +49,6 @@ COMPACTABLE_TOOL_NAMES: frozenset[str] = frozenset([
 
 # ---------------------------------------------------------------------------
 # Time-based microcompact configuration
-# (port of typescript/src/services/compact/timeBasedMCConfig.ts)
 # ---------------------------------------------------------------------------
 
 DEFAULT_TIME_BASED_MC_ENABLED = True
@@ -117,7 +112,7 @@ def is_compactable_tool(tool_name: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Image / document stripping (works on raw dicts â€” API message format)
+# Image / document stripping (works on raw dicts â€?API message format)
 # ---------------------------------------------------------------------------
 
 
@@ -256,7 +251,7 @@ def strip_images_from_typed_messages(messages: list[Message]) -> list[Message]:
 
 
 # ---------------------------------------------------------------------------
-# Core microcompact â€” typed Message objects
+# Core microcompact â€?typed Message objects
 # ---------------------------------------------------------------------------
 
 
@@ -391,16 +386,16 @@ def microcompact_typed_messages(
 
 
 # ---------------------------------------------------------------------------
-# Backward-compatible dict-based API (used by compact_service and tests)
+# API message dict microcompact.
 # ---------------------------------------------------------------------------
 
 
-def microcompact_messages(
+def microcompact_api_messages(
     messages: list[dict[str, Any]],
     keep_recent: int = 3,
 ) -> tuple[list[dict[str, Any]], int]:
     """
-    Lightweight compact of old tool results (dict-based, backward compat).
+    Lightweight compact of old tool results in API-format dict messages.
 
     Clears content from compactable tool results beyond the most recent
     ``keep_recent`` ones.

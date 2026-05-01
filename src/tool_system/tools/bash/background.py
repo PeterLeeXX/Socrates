@@ -1,6 +1,5 @@
 """Background execution helpers for the Bash tool.
 
-Mirrors the subset of ``typescript/src/tools/BashTool/BashTool.tsx`` that
 handles ``run_in_background: true`` -- the command is spawned detached from
 the foreground request, its combined stdout/stderr streams are captured to a
 temp file, and a small metadata record is kept on ``ToolContext`` so
@@ -26,7 +25,6 @@ def _bg_output_dir() -> Path:
     """Return the directory where background-task stdout/stderr files live.
 
     Follows the convention used by
-    ``typescript/src/utils/task/diskOutput.ts``: ``<tmp>/socrates-bg/``.
     """
     root = Path(tempfile.gettempdir()) / "socrates-bg"
     root.mkdir(parents=True, exist_ok=True)
@@ -42,7 +40,6 @@ def spawn_background_bash(
 ) -> dict[str, Any]:
     """Spawn *command* in the background and register it on *context*.
 
-    Returns a dict that mirrors the shape consumed by
     ``_bash_map_result_to_api``: it includes the background task id plus a
     human-readable message instructing the model how to poll the output.
     """
@@ -132,7 +129,6 @@ def read_background_output(
 ) -> dict[str, Any] | None:
     """Return the current snapshot of a background Bash task, or ``None``.
 
-    Result shape mirrors what ``TaskOutput`` exposes to the model:
         {
             "task_id": ...,
             "status": "running" | "completed" | "failed",

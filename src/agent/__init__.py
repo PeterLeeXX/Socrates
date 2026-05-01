@@ -31,7 +31,6 @@ from .constants import (
     CUSTOM_AGENT_DISALLOWED_TOOLS,
     DEFAULT_AGENT_PROMPT,
     FORK_SUBAGENT_TYPE,
-    LEGACY_AGENT_TOOL_NAME,
     ONE_SHOT_BUILTIN_AGENT_TYPES,
 )
 from .prompt import (
@@ -52,7 +51,6 @@ from .subagent_context import (
 )
 
 __all__ = [
-    # Legacy
     "Conversation",
     "Message",
     "Session",
@@ -82,7 +80,6 @@ __all__ = [
     "CUSTOM_AGENT_DISALLOWED_TOOLS",
     "DEFAULT_AGENT_PROMPT",
     "FORK_SUBAGENT_TYPE",
-    "LEGACY_AGENT_TOOL_NAME",
     "ONE_SHOT_BUILTIN_AGENT_TYPES",
     # Prompt
     "format_agent_line",

@@ -6,7 +6,6 @@ from src.services.compact.session_memory_compact import (
     SESSION_MEMORY_PROMPT,
     calculate_messages_to_keep_index,
     adjust_index_to_preserve_api_invariants,
-    try_session_memory_compaction,
     SessionMemoryCompactConfig,
     has_text_blocks,
 )
@@ -232,21 +231,3 @@ class TestSessionMemoryCompaction:
             else:
                 msgs.append(AssistantMessage(content=[TextBlock(text=f"resp {i}")]))
         return msgs
-
-    def test_try_compaction(self):
-        msgs = self._make_messages(10)
-        to_summarize, to_keep = try_session_memory_compaction(msgs, 4)
-        assert len(to_summarize) + len(to_keep) == 10
-        assert len(to_keep) >= 4
-
-    def test_try_compaction_short(self):
-        msgs = self._make_messages(2)
-        to_summarize, to_keep = try_session_memory_compaction(msgs, 4)
-        assert len(to_summarize) == 0
-        assert len(to_keep) == 2
-
-    def test_try_compaction_equal(self):
-        msgs = self._make_messages(4)
-        to_summarize, to_keep = try_session_memory_compaction(msgs, 4)
-        assert len(to_summarize) == 0
-        assert len(to_keep) == 4

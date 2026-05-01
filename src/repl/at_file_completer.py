@@ -1,9 +1,5 @@
 """``@`` file-mention completer for the REPL's prompt and live input.
 
-Mirrors the TS Ink reference's ``@``-mention behavior
-(``typescript/src/hooks/fileSuggestions.ts`` +
-``typescript/src/hooks/useTypeahead.tsx``):
-
 * Trigger on ``@`` at the start of a token (preceded by whitespace or
   beginning-of-line). The token after ``@`` is matched against a cached
   list of project files; matches are offered as completions that
@@ -14,7 +10,6 @@ Mirrors the TS Ink reference's ``@``-mention behavior
   the obvious heavyweight directories (``.git``, ``node_modules``,
   ``__pycache__`` ...).
 * Empty query (``@`` with nothing after) lists the top of the candidate
-  set so the popup appears immediately on ``@``, matching the TS
   ``showOnEmpty`` path.
 * The cache is rebuilt on a 5-second floor - short enough to pick up
   newly-created files in a typing session without spawning a git
@@ -46,7 +41,6 @@ except ModuleNotFoundError:  # pragma: no cover - prompt_toolkit guarded by REPL
             pass
 
 
-# Same character class the TS reference uses for ``@`` tokens, minus the
 # unicode property escapes (Python's ``re`` doesn't speak ``\p{L}``);
 # ``\w`` already covers letters/digits/underscore for the common case
 # and we add the punctuation set explicitly so paths like
@@ -139,7 +133,6 @@ class AtFileCompleter(Completer):
             return
 
         # Don't trigger on ``foo@bar`` (e.g. an email address) - the
-        # ``@`` must be at the start of a token. The TS reference uses
         # the same rule.
         at_pos = match.start()
         if at_pos > 0 and not text[at_pos - 1].isspace():
@@ -152,9 +145,7 @@ class AtFileCompleter(Completer):
         # ``@../...``) bypass the project-files index and walk the
         # filesystem directly so the user can reference any path on
         # disk - e.g. ``@/Users/me/Downloads/screenshot.png`` for
-        # files outside the project. Mirrors the TS
         # ``isPathLikeToken`` branch in
-        # ``typescript/src/utils/suggestions/directoryCompletion.ts``.
         if _is_path_like_token(query):
             for entry in _path_completions(query, self._max_suggestions):
                 yield Completion(
@@ -171,7 +162,6 @@ class AtFileCompleter(Completer):
         matches = _filter_candidates(candidates, query, self._max_suggestions)
         # ``start_position`` is negative: how far back from the cursor
         # the replacement begins. We replace the ``@<query>`` span so
-        # the result is ``@<path>`` (matching TS ``applyFileSuggestion``
         # which keeps the ``@`` prefix).
         for path in matches:
             yield Completion(
@@ -233,7 +223,6 @@ def _list_git_files(cwd: Path) -> list[str] | None:
     repo_root = Path(rev.stdout.strip()).resolve()
 
     # ``--cached --others --exclude-standard`` = tracked + untracked
-    # respecting ``.gitignore``. Matches the TS reference's union of
     # the tracked set and the background untracked fetch.
     try:
         result = subprocess.run(
@@ -341,7 +330,7 @@ def _is_path_like_token(token: str) -> bool:
 
 
 def _path_completions(query: str, limit: int) -> list[_PathSuggestion]:
-    """List directory entries matching ``query`` as a partial path.
+    """
 
     Splits ``query`` into ``dirname`` + ``basename``; lists entries
     in ``dirname`` whose name starts with ``basename`` (case

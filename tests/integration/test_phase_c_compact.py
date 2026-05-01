@@ -10,7 +10,6 @@ from src.services.compact.reactive_compact import (
 )
 from src.services.compact.session_memory_compact import (
     SessionMemory,
-    try_session_memory_compaction,
 )
 from src.services.compact.prompt import (
     format_compact_summary,
@@ -53,18 +52,7 @@ class TestCompactIntegration:
         assert len(post_messages) >= 1
         assert post_messages[0]["role"] == "user"
 
-    def test_session_memory_with_compaction(self):
-        messages = [
-            UserMessage(role="user", content=f"question {i}")
-            if i % 2 == 0
-            else AssistantMessage(role="assistant", content=f"answer {i}")
-            for i in range(10)
-        ]
-
-        to_summarize, to_keep = try_session_memory_compaction(messages, 4)
-        assert len(to_keep) >= 4
-        assert len(to_summarize) + len(to_keep) == 10
-
+    def test_session_memory_formatting(self):
         mem = SessionMemory()
         mem.add("User is working on Python CLI")
         mem.add("Project uses pytest for testing")

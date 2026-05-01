@@ -118,7 +118,6 @@ class LiveStatus:
         # Optional ``prompt_toolkit.completion.Completer``. When set,
         # the live input buffer surfaces completions (e.g. ``@`` file
         # mentions, slash commands) in a popup above the input row -
-        # parity with the foreground ``PromptSession``.
         self._completer = completer
         self._frame_index = 0
         self._app: Application | None = None
@@ -212,7 +211,6 @@ class LiveStatus:
         def _enter(event):  # type: ignore[no-untyped-def]
             """Enter: accept a highlighted completion, else submit.
 
-            Mirrors the foreground PromptSession's behavior so the
             completion popup feels uniform across the live and idle
             input rows. ``current_completion`` is set when the user
             has navigated into the menu via Tab / Up / Down; if it's
@@ -335,7 +333,6 @@ class LiveStatus:
         style = Style.from_dict(
             {
                 # ``input-row`` is the dim slab behind the prompt
-                # marker + editable buffer; the matching background on
                 # ``prompt`` keeps the ``>`` arrow tonally consistent
                 # with its row instead of looking like a floating
                 # foreground glyph.

@@ -1,6 +1,4 @@
 """
-Tool Search utilities — aligned with typescript/src/utils/toolSearch.ts.
-
 When enabled, deferred tools (MCP and should_defer tools) are sent with
 defer_loading=True and discovered via ToolSearchTool rather than being
 loaded upfront.  This reduces initial context window usage.
@@ -42,7 +40,6 @@ DEFAULT_UNSUPPORTED_MODEL_PATTERNS = ["haiku"]
 
 
 # ---------------------------------------------------------------------------
-# ToolSearchMode enum — mirrors TS ToolSearchMode
 # ---------------------------------------------------------------------------
 
 class ToolSearchMode(str, Enum):
@@ -95,8 +92,6 @@ def get_tool_search_mode() -> ToolSearchMode:
     """
     Determine tool search mode from ENABLE_TOOL_SEARCH env var.
 
-    Mirrors TS getToolSearchMode from toolSearch.ts.
-
     ENABLE_TOOL_SEARCH    Mode
     auto / auto:1-99      tst-auto
     true / auto:0         tst
@@ -145,7 +140,6 @@ def model_supports_tool_reference(model: str) -> bool:
     Check if a model supports tool_reference blocks.
 
     Uses negative test: models assumed to support unless they match
-    an unsupported pattern. Mirrors TS modelSupportsToolReference.
     """
     normalized = model.lower()
     for pattern in DEFAULT_UNSUPPORTED_MODEL_PATTERNS:
@@ -163,7 +157,6 @@ def is_deferred_tool(tool: Tool) -> bool:
     Check if a tool should be deferred (not loaded inline).
 
     A tool is deferred if it's an MCP tool or has should_defer=True.
-    Mirrors TS isDeferredTool from toolSearch.ts.
     """
     if tool.is_mcp:
         return True
@@ -189,7 +182,6 @@ def is_tool_search_enabled_optimistic() -> bool:
     Optimistic check — returns True if tool search *might* be enabled.
 
     Returns False only when definitively disabled (standard mode).
-    Mirrors TS isToolSearchEnabledOptimistic.
     """
     mode = get_tool_search_mode()
     return mode != ToolSearchMode.STANDARD
@@ -203,7 +195,6 @@ async def is_tool_search_enabled(
     Definitive check if tool search is enabled for a specific request.
 
     Checks: mode, model support, ToolSearchTool availability, threshold.
-    Mirrors TS isToolSearchEnabled from toolSearch.ts.
     """
     if not model_supports_tool_reference(model):
         logger.debug("Tool search disabled: model %s doesn't support tool_reference", model)
@@ -265,7 +256,6 @@ def extract_discovered_tool_names(messages: list[Any]) -> set[str]:
     via ToolSearchTool which returns tool_reference blocks. This function
     scans the message history to find all discovered tool names.
 
-    Mirrors TS extractDiscoveredToolNames from toolSearch.ts.
     """
     discovered: set[str] = set()
 

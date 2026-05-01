@@ -6,7 +6,6 @@ from src.services.api.errors import (
     APIConnectionError,
     APITimeoutError,
     ErrorClassification,
-    FallbackTriggeredError,
     InvalidAPIKeyError,
     MaxOutputTokensError,
     OverloadedError,
@@ -55,13 +54,6 @@ class TestOverloadedError(unittest.TestCase):
     def test_default_status(self) -> None:
         err = OverloadedError()
         self.assertEqual(err.status, 529)
-
-
-class TestFallbackTriggeredError(unittest.TestCase):
-    def test_stores_models(self) -> None:
-        err = FallbackTriggeredError("claude-opus-4-20250514", "claude-sonnet-4-20250514")
-        self.assertEqual(err.original_model, "claude-opus-4-20250514")
-        self.assertEqual(err.fallback_model, "claude-sonnet-4-20250514")
 
 
 class TestParsePromptTooLongTokenCounts(unittest.TestCase):

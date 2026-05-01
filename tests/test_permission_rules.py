@@ -4,7 +4,6 @@ import unittest
 
 from src.permissions.rule_parser import (
     escape_rule_content,
-    normalize_legacy_tool_name,
     permission_rule_value_from_string,
     permission_rule_value_to_string,
     unescape_rule_content,
@@ -73,11 +72,6 @@ class TestRuleParser(unittest.TestCase):
         rv = permission_rule_value_from_string("Bash(content")
         self.assertEqual(rv.tool_name, "Bash(content")
         self.assertIsNone(rv.rule_content)
-
-    def test_legacy_tool_name_normalization(self) -> None:
-        self.assertEqual(normalize_legacy_tool_name("Task"), "Agent")
-        self.assertEqual(normalize_legacy_tool_name("KillShell"), "TaskStop")
-        self.assertEqual(normalize_legacy_tool_name("Bash"), "Bash")
 
     def test_roundtrip(self) -> None:
         original = "Bash(npm install)"

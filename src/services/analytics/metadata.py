@@ -1,6 +1,5 @@
 """Session analytics metadata.
 
-Mirrors TypeScript analytics/metadata.ts — collects session-level metadata
 for analytics reporting.
 """
 from __future__ import annotations

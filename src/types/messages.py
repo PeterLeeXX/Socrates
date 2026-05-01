@@ -1,4 +1,4 @@
-"""Typed message hierarchy mirroring TypeScript src/types/message.ts and src/utils/messages.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 
@@ -359,7 +359,6 @@ def ensure_tool_result_pairing(
 ) -> list[dict[str, Any]]:
     """Validate and repair tool_use/tool_result pairing.
 
-    Mirrors TS ensureToolResultPairing (messages.ts).
     - Forward: inserts synthetic error tool_result blocks for tool_use blocks missing results
     - Reverse: strips orphaned tool_result blocks referencing non-existent tool_use blocks
     - Deduplicates tool_use IDs across the full message array

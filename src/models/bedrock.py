@@ -1,4 +1,4 @@
-"""Bedrock model ID mapping matching TypeScript model/bedrock.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

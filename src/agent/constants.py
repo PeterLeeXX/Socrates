@@ -1,17 +1,13 @@
-"""Agent system constants.
-
-Mirrors the agent tool constants reference and the Agent tool constants reference.
-"""
+"""Agent system constants."""
 from __future__ import annotations
 
 # --- Tool name constants ---
 AGENT_TOOL_NAME = "Agent"
-LEGACY_AGENT_TOOL_NAME = "Task"
 
 # --- Built-in agent type identifiers ---
 VERIFICATION_AGENT_TYPE = "verification"
 
-# Built-in agents that run once and return a report 閳?the parent never
+# Built-in agents that run once and return a report - the parent never
 # sends messages back to continue them. Skip the agentId/SendMessage/usage
 # trailer for these to save tokens.
 ONE_SHOT_BUILTIN_AGENT_TYPES: frozenset[str] = frozenset([
@@ -22,7 +18,6 @@ ONE_SHOT_BUILTIN_AGENT_TYPES: frozenset[str] = frozenset([
 # --- Tool filtering sets ---
 
 # Tools always blocked for ALL agents (built-in and custom).
-# Mirrors ALL_AGENT_DISALLOWED_TOOLS from the agent tool constants reference.
 ALL_AGENT_DISALLOWED_TOOLS: frozenset[str] = frozenset([
     "TaskOutput",
     "ExitPlanMode",
@@ -34,13 +29,11 @@ ALL_AGENT_DISALLOWED_TOOLS: frozenset[str] = frozenset([
 ])
 
 # Additional tools blocked for custom (non-built-in) agents.
-# Mirrors CUSTOM_AGENT_DISALLOWED_TOOLS.
 CUSTOM_AGENT_DISALLOWED_TOOLS: frozenset[str] = frozenset([
     *ALL_AGENT_DISALLOWED_TOOLS,
 ])
 
 # Whitelist of tools allowed for async (background) agents.
-# Mirrors ASYNC_AGENT_ALLOWED_TOOLS from the agent tool constants reference.
 ASYNC_AGENT_ALLOWED_TOOLS: frozenset[str] = frozenset([
     "Read",
     "WebSearch",
@@ -58,7 +51,6 @@ ASYNC_AGENT_ALLOWED_TOOLS: frozenset[str] = frozenset([
 ])
 
 # Default agent system prompt when agent definition doesn't provide one.
-# Mirrors DEFAULT_AGENT_PROMPT from the system prompt reference.
 DEFAULT_AGENT_PROMPT = (
     "You are an agent for Socrates. Given the user's message, you should use the "
     "tools available to complete the task. Complete the task fully\u2014don't gold-plate, "

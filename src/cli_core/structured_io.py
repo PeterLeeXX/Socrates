@@ -1,6 +1,5 @@
 """Structured NDJSON stdin/stdout for headless CLI mode.
 
-This is a focused port of ``typescript/src/cli/structuredIO.ts``. The goal is
 to give SDK clients a stable, framing-safe protocol:
 
 - ``StreamJsonReader`` parses ``--input-format stream-json`` lines from stdin
@@ -9,7 +8,6 @@ to give SDK clients a stable, framing-safe protocol:
   NDJSON record per line, with U+2028/U+2029 escaped via
   :func:`ndjson_safe_dumps`.
 
-The event vocabulary intentionally matches the TypeScript CLI: ``system`` for
 init metadata, ``assistant`` for each completed assistant turn,
 ``partial_text`` for streaming token deltas, ``tool_use`` / ``tool_result`` /
 ``tool_error`` for tool activity, and ``result`` as the terminal event.
@@ -102,7 +100,6 @@ class ResultEvent(HeadlessEvent):
 class UserInputMessage:
     """One logical user input read from stream-json stdin.
 
-    The TypeScript SDK sends ``{"type": "user", "message": {"content": ...}}``
     where ``content`` is either a string or a list of Anthropic content blocks.
     We normalize both shapes into a plain ``text`` string for the Python agent
     loop, preserving the original ``content`` for callers that want the full

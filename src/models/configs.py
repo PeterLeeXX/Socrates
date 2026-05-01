@@ -1,4 +1,4 @@
-"""Per-model configuration matching TypeScript model/configs.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 
@@ -17,8 +17,6 @@ class ModelConfig:
     supports_vision: bool = True
     supports_computer_use: bool = False
     supports_cache: bool = True
-    is_deprecated: bool = False
-    deprecation_message: str = ""
     cost_input_per_mtok: float = 3.0
     cost_output_per_mtok: float = 15.0
     cost_cache_create_per_mtok: float = 3.75
@@ -78,8 +76,6 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         context_window=200_000,
         max_output_tokens=8_192,
         supports_thinking=False,
-        is_deprecated=True,
-        deprecation_message="Use claude-sonnet-4-20250514 instead",
         cost_input_per_mtok=3.0,
         cost_output_per_mtok=15.0,
     ),
@@ -102,8 +98,6 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         context_window=200_000,
         max_output_tokens=4_096,
         supports_thinking=False,
-        is_deprecated=True,
-        deprecation_message="Use claude-opus-4-20250514 instead",
         cost_input_per_mtok=15.0,
         cost_output_per_mtok=75.0,
     ),
@@ -113,8 +107,6 @@ MODEL_CONFIGS: dict[str, ModelConfig] = {
         context_window=200_000,
         max_output_tokens=4_096,
         supports_thinking=False,
-        is_deprecated=True,
-        deprecation_message="Use claude-sonnet-4-20250514 instead",
         cost_input_per_mtok=3.0,
         cost_output_per_mtok=15.0,
     ),

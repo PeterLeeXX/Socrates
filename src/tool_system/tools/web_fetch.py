@@ -1,4 +1,4 @@
-"""WebFetch tool 鈥?fetch a URL and return extracted text content.
+"""WebFetch tool - fetch a URL and return extracted text content.
 
 Features:
 - HTML-to-markdown conversion (markdownify or regex fallback)

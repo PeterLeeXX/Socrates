@@ -1,4 +1,4 @@
-"""StreamingToolExecutor — mirrors TypeScript StreamingToolExecutor.ts.
+"""
 
 Executes tools as they stream in with concurrency control:
 - Concurrent-safe tools can execute in parallel with other concurrent-safe tools

@@ -1,7 +1,6 @@
 """
 Layer 4: Context collapse — read-time projection via collapse store.
 
-Port of ``typescript/src/services/contextCollapse/index.ts`` (stub in TS,
 feature-gated). We implement the full store and projection logic described
 in the refactoring plan (WS-6 §6.3).
 

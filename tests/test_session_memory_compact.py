@@ -11,7 +11,6 @@ from src.types.messages import Message, UserMessage, AssistantMessage
 from src.services.compact.session_memory_compact import (
     calculate_messages_to_keep_index,
     adjust_index_to_preserve_api_invariants,
-    try_session_memory_compaction,
     SessionMemoryCompactConfig,
     has_text_blocks,
 )
@@ -105,50 +104,6 @@ class TestAdjustIndex(unittest.TestCase):
     def test_index_beyond_end(self):
         msgs = [_user("q1")]
         self.assertEqual(adjust_index_to_preserve_api_invariants(msgs, 5), 5)
-
-
-class TestTrySessionMemoryCompaction(unittest.TestCase):
-    """Tests for try_session_memory_compaction()."""
-
-    def test_empty_messages(self):
-        to_summarize, to_keep = try_session_memory_compaction([], 5)
-        self.assertEqual(to_summarize, [])
-        self.assertEqual(to_keep, [])
-
-    def test_basic_split(self):
-        msgs = [_user("q1"), _assistant("a1"), _user("q2"), _assistant("a2"),
-                _user("q3"), _assistant("a3"), _user("q4"), _assistant("a4")]
-        to_summarize, to_keep = try_session_memory_compaction(msgs, 4)
-        self.assertEqual(len(to_summarize), 4)
-        self.assertEqual(len(to_keep), 4)
-
-    def test_preserves_tool_pairs(self):
-        """Split adjusted to avoid breaking tool_use/tool_result."""
-        msgs = [
-            _user("q1"),
-            _assistant_tool("t1"),
-            _user_result("t1"),
-            _user("q2"),
-            _assistant("a2"),
-        ]
-        to_summarize, to_keep = try_session_memory_compaction(msgs, 2)
-        summarized_ids = set()
-        for m in to_summarize:
-            if isinstance(m.content, list):
-                for b in m.content:
-                    if isinstance(b, ToolUseBlock):
-                        summarized_ids.add(b.id)
-                    elif isinstance(b, ToolResultBlock):
-                        summarized_ids.add(b.tool_use_id)
-        kept_ids = set()
-        for m in to_keep:
-            if isinstance(m.content, list):
-                for b in m.content:
-                    if isinstance(b, ToolUseBlock):
-                        kept_ids.add(b.id)
-                    elif isinstance(b, ToolResultBlock):
-                        kept_ids.add(b.tool_use_id)
-        self.assertEqual(summarized_ids & kept_ids, set())
 
 
 if __name__ == "__main__":

@@ -1,10 +1,7 @@
 """DeepSeek provider implementation.
 
 DeepSeek exposes an OpenAI-compatible API at https://api.deepseek.com.
-Current production models are ``deepseek-v4-pro`` and ``deepseek-v4-flash``;
-the legacy aliases ``deepseek-chat`` / ``deepseek-reasoner`` are being
-deprecated and resolve to the non-thinking / thinking modes of
-``deepseek-v4-flash`` respectively.
+Current production models are ``deepseek-v4-pro`` and ``deepseek-v4-flash``.
 """
 
 from __future__ import annotations
@@ -57,16 +54,8 @@ class DeepSeekProvider(OpenAICompatibleProvider):
         return OpenAI(**kwargs)
 
     def get_available_models(self) -> list[str]:
-        """Return DeepSeek's current production models.
-
-        ``deepseek-chat`` and ``deepseek-reasoner`` are kept for backward
-        compatibility but DeepSeek has announced they will be deprecated.
-        """
+        """Return DeepSeek's current production models."""
         return [
-            # V4 series (current)
             "deepseek-v4-pro",
             "deepseek-v4-flash",
-            # Legacy aliases (being deprecated; map to v4-flash modes)
-            "deepseek-chat",
-            "deepseek-reasoner",
         ]

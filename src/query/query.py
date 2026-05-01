@@ -303,7 +303,6 @@ def _partition_tool_calls(
     Consecutive ConcurrencySafe tools are grouped for parallel execution.
     Non-safe tools each get their own exclusive batch.
 
-    Mirrors TS: evaluates isConcurrencySafe per-call with actual tool input
     (not a static lookup), so e.g. read-only Bash commands can be parallel.
     """
     batches: list[_ToolBatch] = []
@@ -328,7 +327,6 @@ def _dispatch_single_tool(
 ) -> UserMessage:
     """Dispatch a single tool and return the UserMessage result.
 
-    Uses tool.map_result_to_api() (mirrors TS mapToolResultToAPIMessage)
     to convert structured output (e.g. file_unchanged) to API-ready text.
     """
     try:
@@ -387,9 +385,8 @@ async def _run_tools_partitioned(
     tool_use_context: ToolContext,
     tools: Tools,
 ) -> list[UserMessage]:
-    """Run tools with TS-matching concurrency: safe tools parallel, unsafe exclusive.
+    """
 
-    Mirrors typescript/src/tools/partitionToolCalls + runTools (Mode 2).
     ConcurrencySafe tools (Read, Grep, Glob, etc.) run in parallel up to
     MAX_TOOL_USE_CONCURRENCY.  Non-safe tools (Bash, Edit, Write) run
     exclusively one at a time.
@@ -430,7 +427,7 @@ def _run_tools_sync(
     tool_registry: ToolRegistry,
     tool_use_context: ToolContext,
 ) -> list[UserMessage]:
-    """Legacy synchronous tool execution (no partitioning)."""
+    """Run tool calls sequentially."""
     results: list[UserMessage] = []
     for block in tool_use_blocks:
         results.append(_dispatch_single_tool(block, tool_registry, tool_use_context))
@@ -464,7 +461,6 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
         yield StreamEvent(type="stream_request_start")
 
         # --- Phase 0: Compression Pipeline ---
-        # Mirrors TS query loop Phase 0: toolResultBudget 鈫?snip 鈫?microcompact 鈫?collapse 鈫?autocompact
         if params.pipeline_config is not None:
             try:
                 # Estimate input tokens so layer 5 (autocompact) can decide
@@ -554,7 +550,7 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
 
                 if max_output_tokens_recovery_count < MAX_OUTPUT_TOKENS_RECOVERY_LIMIT:
                     recovery_message = _create_user_message(
-                        "Output token limit hit. Resume directly 鈥?no apology, no recap of what you were doing. "
+                        "Output token limit hit. Resume directly - no apology, no recap of what you were doing. "
                         "Pick up mid-thought if that is where the cut happened. Break remaining work into smaller pieces.",
                         is_meta=True,
                     )

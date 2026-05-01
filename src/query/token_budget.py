@@ -1,4 +1,4 @@
-"""Token budget — mirrors TypeScript query/tokenBudget.ts and utils/tokenBudget.ts.
+"""
 
 Provides budget checking (continue/stop decisions), diminishing returns detection,
 and budget parsing from user messages.

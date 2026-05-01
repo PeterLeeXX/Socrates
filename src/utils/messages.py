@@ -1,4 +1,4 @@
-"""Extended message utilities matching TypeScript utils/messages.ts.
+"""
 
 Provides advanced normalization, creation variants, content helpers,
 thinking block handling, and message predicates.
@@ -227,7 +227,7 @@ def _ensure_tool_result_pairing(
     messages: list[dict[str, Any]],
     seen_tool_use_ids: set[str],
 ) -> None:
-    """Ensure every tool_use has a matching tool_result.
+    """
 
     Adds synthetic tool_result for orphaned tool_use blocks.
     """

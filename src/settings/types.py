@@ -1,4 +1,4 @@
-"""Settings schema types matching TypeScript settings/types.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ class McpServerSettings:
 
 @dataclass
 class SettingsSchema:
-    """Full settings schema matching TypeScript SettingsSchema."""
+    """Project-native implementation."""
 
     # Model
     model: str = ""

@@ -65,8 +65,8 @@ class TestCompressionLayers(unittest.TestCase):
         self.assertTrue(callable(snip_compact))
 
     def test_microcompact_exists(self) -> None:
-        from src.context_system.microcompact import microcompact_messages
-        self.assertTrue(callable(microcompact_messages))
+        from src.context_system.microcompact import microcompact_api_messages
+        self.assertTrue(callable(microcompact_api_messages))
 
     def test_context_collapse_exists(self) -> None:
         from src.services.compact.context_collapse import ContextCollapseStore

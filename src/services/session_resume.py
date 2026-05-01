@@ -1,6 +1,5 @@
 """Session resume — read JSONL, reconstruct typed Messages.
 
-Matches TypeScript session/resume.ts. Handles:
 - Malformed line recovery
 - Orphaned permissions (tool_use without tool_result)
 - Cross-project path adjustment

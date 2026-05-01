@@ -116,9 +116,9 @@ class TestPermissionRuleFlow(unittest.TestCase):
         serialized = permission_rule_value_to_string(rule)
         self.assertEqual(serialized, original)
 
-    def test_legacy_alias_normalization(self) -> None:
+    def test_tool_name_is_not_rewritten(self) -> None:
         rule = permission_rule_value_from_string("Task")
-        self.assertEqual(rule.tool_name, "Agent")
+        self.assertEqual(rule.tool_name, "Task")
 
     def test_escaped_content(self) -> None:
         rule_str = "Bash(echo \\(hello\\))"

@@ -54,8 +54,6 @@ def main():
         return show_config()
 
     # Resolve permission state ONCE here so all modes (print/REPL) honor
-    # ``--dangerously-skip-permissions`` consistently. Mirrors
-    # ``typescript/src/main.tsx:1383-1389``.
     _resolve_permission_state(args)
 
     if args.print:
@@ -91,7 +89,6 @@ Examples:
     parser.add_argument('--config', action='store_true', help='Show current configuration')
     parser.add_argument('--stream', action='store_true', help='Enable live rendering in REPL')
 
-    # ---- Non-interactive / print mode (Phase 1 parity) ----
     noninteractive = parser.add_argument_group("non-interactive mode")
     noninteractive.add_argument(
         '-p', '--print',
@@ -154,8 +151,6 @@ Examples:
     # ---- Permissions ----
     # ``--dangerously-skip-permissions`` and ``--allow-dangerously-skip-permissions``
     # apply to all modes (REPL and headless), so they live in a top-level
-    # group rather than under ``noninteractive``. Mirrors the TS reference at
-    # ``typescript/src/main.tsx:970``.
     permissions_group = parser.add_argument_group("permissions")
     permissions_group.add_argument(
         '--dangerously-skip-permissions',
@@ -208,8 +203,6 @@ def _resolve_permission_state(args) -> None:
     when either bypass flag was passed. Stashes the result on ``args`` so
     every downstream mode (print and REPL) can read it without re-deriving.
 
-    Mirrors the wiring in ``typescript/src/main.tsx`` lines 1087-1392 plus
-    the safety check in ``typescript/src/setup.ts:382-401``.
     """
     import logging as _logging
 
@@ -225,7 +218,7 @@ def _resolve_permission_state(args) -> None:
     allow_dangerously = bool(getattr(args, 'allow_dangerously_skip_permissions', False))
     permission_mode_cli = getattr(args, 'permission_mode', None)
 
-    # Safety gate first 鈥?refuse to run as root outside a sandbox.
+    # Safety gate first - refuse to run as root outside a sandbox.
     enforce_dangerous_skip_permissions_safety(
         bypass_requested=dangerously or allow_dangerously,
     )
@@ -282,7 +275,6 @@ def _run_print_mode(args) -> int:
         provider_name=args.provider,
         model=args.model,
         max_turns=args.max_turns,
-        skip_permissions=bool(args.dangerously_skip_permissions),
         permission_mode=args._resolved_permission_mode,
         is_bypass_permissions_mode_available=args._resolved_is_bypass_available,
         allowed_tools=tuple(allowed),
@@ -365,8 +357,8 @@ def handle_login():
     set_api_key(provider, api_key=api_key, base_url=base_url, default_model=default_model)
     set_default_provider(provider)
 
-    console.print(f"\n[green]鉁?{provider.upper()} API Key saved successfully![/green]")
-    console.print(f"[green]鉁?Default provider set to: {provider}[/green]\n")
+    console.print(f"\n[green]OK {provider.upper()} API Key saved successfully![/green]")
+    console.print(f"[green]OK Default provider set to: {provider}[/green]\n")
     return 0
 
 

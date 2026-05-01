@@ -1,6 +1,5 @@
 """Swarm team helpers.
 
-Mirrors TypeScript swarm/helpers.ts — utility functions for team coordination.
 """
 from __future__ import annotations
 

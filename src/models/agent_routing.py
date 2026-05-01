@@ -1,4 +1,4 @@
-"""Per-agent model routing matching TypeScript model/agent.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

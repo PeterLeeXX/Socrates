@@ -1,8 +1,6 @@
 """
 Group messages by API round-trip boundaries.
 
-Port of ``typescript/src/services/compact/grouping.ts``.
-
 An *API round* is one assistant turn plus the tool-result user messages
 that follow it.  Grouping is used by the reactive compaction logic so it
 can operate on single-prompt agentic sessions.
@@ -41,7 +39,6 @@ def group_messages_by_api_round(messages: list[Message]) -> list[ApiRound]:
     user messages (before the first assistant turn) are placed into a round
     with ``assistant=None``.
 
-    Mirrors ``groupMessagesByApiRound`` in the TypeScript reference.
     """
     rounds: list[ApiRound] = []
     current: ApiRound | None = None

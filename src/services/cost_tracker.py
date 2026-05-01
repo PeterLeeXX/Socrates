@@ -1,6 +1,5 @@
 """Cost tracker — per-model pricing, per-turn + cumulative cost, cache hit savings.
 
-Mirrors the TypeScript cost tracking behavior for API usage metering.
 """
 
 from __future__ import annotations

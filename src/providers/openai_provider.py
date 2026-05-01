@@ -62,7 +62,7 @@ class OpenAIProvider(OpenAICompatibleProvider):
             "gpt-5.2-nano",
             # GPT-5.3-Codex (coding-specialized)
             "gpt-5.3-codex",
-            # Legacy GPT-4 series
+            # GPT-4 series
             "gpt-4o",
             "gpt-4o-mini",
             "gpt-4-turbo",

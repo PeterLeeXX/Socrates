@@ -1,6 +1,5 @@
 """Agent definition types and built-in agents.
 
-Mirrors typescript/src/tools/AgentTool/loadAgentsDir.ts and built-in/*.ts.
 """
 from __future__ import annotations
 
@@ -17,14 +16,13 @@ AgentSource = Literal["built-in", "user", "plugin", "dynamic"]
 class AgentDefinition:
     """Definition for an agent that can be spawned by the Agent tool.
 
-    Mirrors the AgentDefinition interface from typescript/src/tools/AgentTool/loadAgentsDir.ts.
     """
     agent_type: str
     when_to_use: str
     tools: list[str] | None = None  # None or ['*'] means all tools
     source: AgentSource = "built-in"
     base_dir: str = "built-in"
-    model: str | None = None  # None 閳?inherit parent, 'inherit' 閳?force inherit
+    model: str | None = None  # None - inherit parent, 'inherit' - force inherit
     permission_mode: PermissionMode | None = None
     max_turns: int | None = None
     background: bool = False
@@ -48,7 +46,6 @@ BuiltInAgentDefinition = AgentDefinition
 
 # --- Built-in agent definitions ---
 
-# --- Shared prompt fragments (mirrors generalPurposeAgent.ts SHARED_*) ---
 
 _SHARED_PREFIX = (
     "You are an agent for Socrates. Given the user's message, you should use the "
@@ -77,7 +74,7 @@ _SHARED_GUIDELINES = (
 
 
 def _general_purpose_system_prompt(**_kwargs: Any) -> str:
-    """Mirrors getGeneralPurposeSystemPrompt() from generalPurposeAgent.ts."""
+    """Project-native implementation."""
     return (
         f"{_SHARED_PREFIX} When you complete the task, respond with a concise "
         "report covering what was done and any key findings \u2014 the caller will relay this to "
@@ -96,13 +93,13 @@ GENERAL_PURPOSE_AGENT = AgentDefinition(
     tools=["*"],
     source="built-in",
     base_dir="built-in",
-    # model intentionally omitted 閳?uses default subagent model
+    # model intentionally omitted - uses default subagent model
     get_system_prompt=_general_purpose_system_prompt,
 )
 
 
 def _explore_system_prompt(**_kwargs: Any) -> str:
-    """Mirrors getExploreSystemPrompt() from exploreAgent.ts."""
+    """Project-native implementation."""
     return (
         "You are a file search specialist for Socrates. You excel at thoroughly "
         "navigating and exploring codebases.\n\n"
@@ -163,7 +160,7 @@ EXPLORE_AGENT = AgentDefinition(
 
 
 def _plan_system_prompt(**_kwargs: Any) -> str:
-    """Mirrors getPlanV2SystemPrompt() from planAgent.ts."""
+    """Project-native implementation."""
     return (
         "You are a software architect and planning specialist for Socrates. "
         "Your role is to explore the codebase and design implementation plans.\n\n"
@@ -231,7 +228,7 @@ PLAN_AGENT = AgentDefinition(
 FORK_AGENT = AgentDefinition(
     agent_type="fork",
     when_to_use=(
-        "Implicit fork 閳?inherits full conversation context. Not selectable via "
+        "Implicit fork - inherits full conversation context. Not selectable via "
         "subagent_type; triggered by omitting subagent_type when the fork experiment "
         "is active."
     ),
@@ -248,7 +245,6 @@ FORK_AGENT = AgentDefinition(
 def get_built_in_agents() -> list[AgentDefinition]:
     """Return the list of active built-in agent definitions.
 
-    Mirrors getBuiltInAgents() from typescript/src/tools/AgentTool/builtInAgents.ts.
     """
     return [
         GENERAL_PURPOSE_AGENT,

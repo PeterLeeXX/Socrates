@@ -1,4 +1,4 @@
-"""Session storage 鈥?JSONL transcript recording matching TypeScript session/storage.ts.
+"""
 
 Provides:
 - SessionStorage: write/read JSONL transcripts with metadata
@@ -28,7 +28,7 @@ SESSIONS_DIR = Path.home() / ".socrates" / "sessions"
 CONTENT_DIR_NAME = "content"
 
 # Thresholds
-LARGE_CONTENT_THRESHOLD = 10_000  # 10KB 鈥?store separately
+LARGE_CONTENT_THRESHOLD = 10_000  # 10KB - store separately
 DEFAULT_RETENTION_DAYS = 30
 MAX_FLUSH_BATCH = 50
 
@@ -312,7 +312,7 @@ class SessionStorage:
                 except Exception:
                     pass
             else:
-                # No metadata 鈥?check directory mtime
+                # No metadata - check directory mtime
                 try:
                     if entry.stat().st_mtime < cutoff:
                         shutil.rmtree(entry, ignore_errors=True)

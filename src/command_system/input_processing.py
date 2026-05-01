@@ -1,4 +1,4 @@
-"""User input processing matching TypeScript utils/input.ts and commands/parseInput.ts.
+"""
 
 Handles:
 - Command detection and routing
@@ -23,7 +23,6 @@ from .types import Command
 # Regex patterns
 _COMMAND_RE = re.compile(r"^/([a-zA-Z][a-zA-Z0-9_-]*)(?:\s+(.*))?$", re.DOTALL)
 # Match any ``@path`` token (including ``@relative/path`` without ``./`` prefix)
-# to line up with ``typescript/src/utils/attachments.ts`` (regex
 # ``/(^|\s)@([^\s]+)\b/g``). We keep trailing punctuation characters out of the
 # capture so ``"see @foo/bar."`` extracts ``foo/bar``. A leading ``@scope``
 # (e.g. ``@anthropic-ai/sdk``) is only treated as a path mention when it contains
@@ -33,7 +32,6 @@ _FILE_MENTION_RE = re.compile(
 )
 
 # Match ``@agent-<type>`` and ``@"<type> (agent)"`` mentions, mirroring
-# ``extractAgentMentions`` in ``typescript/src/utils/attachments.ts``. Both
 # quoted and unquoted variants are supported; the captured group is the
 # agent-type string (minus the ``agent-`` prefix for the unquoted form).
 _AGENT_MENTION_UNQUOTED_RE = re.compile(
@@ -120,9 +118,7 @@ def parse_user_input(text: str, *, cwd: str | None = None) -> ParsedInput:
 def _extract_file_mentions(text: str, cwd: str | None = None) -> list[str]:
     """Extract ``@path`` mentions from text.
 
-    Mirrors the behaviour of
     ``extractAtMentionedFiles`` / ``processAtMentionedFiles`` in
-    ``typescript/src/utils/attachments.ts``: paths without a leading
     ``/``/``./``/``../``/``~`` are resolved relative to ``cwd`` (so
     ``@demos/minecraft_v2`` picks up the workspace folder of the same
     name). Bare ``@foo`` words are ignored when they don't look like a path
@@ -168,8 +164,6 @@ def expand_at_mentions(
 ) -> tuple[str, list[dict[str, str]]]:
     """Resolve ``@path`` mentions and build context attachments.
 
-    Mirrors ``processAtMentionedFiles`` in
-    ``typescript/src/utils/attachments.ts``: if a mention resolves to a
     directory we build a ``Listed directory`` attachment containing its
     entries (up to 1000); if it resolves to a readable file we attach the
     file's contents verbatim. The returned ``text`` is left unchanged — the
@@ -262,7 +256,6 @@ def format_at_mention_attachments(attachments: list[dict[str, str]]) -> str:
                 f"</system-reminder>"
             )
         elif kind == "agent_mention":
-            # Mirrors ``typescript/src/utils/messages.ts`` ``agent_mention``
             # case: the reminder nudges the model to delegate to the named
             # agent via the Agent tool rather than replying inline.
             blocks.append(
@@ -282,8 +275,6 @@ def expand_agent_mentions(
 ) -> list[dict[str, str]]:
     """Find ``@agent-<type>`` mentions and build ``agent_mention`` attachments.
 
-    Mirrors ``processAgentMentions`` in
-    ``typescript/src/utils/attachments.ts``: each mention that resolves to a
     known agent type produces a single attachment; unknown agents are
     silently dropped so stray ``@agent-foo`` text in prompts doesn't pollute
     the model's context with misleading reminders.

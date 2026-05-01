@@ -1,4 +1,4 @@
-"""Tool execution — mirrors TypeScript toolExecution.ts.
+"""
 
 Core function: run_tool_use() — async generator yielding MessageUpdateLazy.
 Handles tool lookup, input validation, permission checks, pre/post hooks,

@@ -143,7 +143,7 @@ def test_has_allow_bypass_permissions_mode_default_false():
 
 
 def test_headless_dsp_flag_flips_tool_context_to_bypass(tmp_path, monkeypatch):
-    """Smoke test the new HeadlessOptions fields without booting an LLM."""
+    """Smoke test HeadlessOptions permission fields without booting an LLM."""
     from src.entrypoints.headless import HeadlessOptions
 
     # We don't run the full headless loop — too noisy. Instead exercise the
@@ -151,25 +151,23 @@ def test_headless_dsp_flag_flips_tool_context_to_bypass(tmp_path, monkeypatch):
     # the default values.
     opts = HeadlessOptions(
         prompt="hi",
-        skip_permissions=True,
-        permission_mode="default",
-        is_bypass_permissions_mode_available=False,
+        permission_mode="bypassPermissions",
+        is_bypass_permissions_mode_available=True,
     )
-    # ``skip_permissions`` is the legacy alias and is honored.
-    assert opts.skip_permissions is True
+    assert opts.permission_mode == "bypassPermissions"
+    assert opts.is_bypass_permissions_mode_available is True
 
 
 def test_headless_options_defaults():
     from src.entrypoints.headless import HeadlessOptions
 
     opts = HeadlessOptions(prompt="hi")
-    assert opts.skip_permissions is False
     assert opts.permission_mode == "default"
     assert opts.is_bypass_permissions_mode_available is False
 
 
-def test_headless_run_skip_permissions_sets_bypass_mode(tmp_path, monkeypatch):
-    """Smoke that run_headless threads `skip_permissions` -> bypass mode."""
+def test_headless_run_bypass_mode_sets_permission_context(tmp_path, monkeypatch):
+    """Smoke that run_headless threads bypass mode into the tool context."""
     from src.entrypoints import headless as headless_mod
     from src.entrypoints.headless import HeadlessOptions, run_headless
     from src.providers.base import ChatResponse
@@ -216,7 +214,8 @@ def test_headless_run_skip_permissions_sets_bypass_mode(tmp_path, monkeypatch):
         HeadlessOptions(
             prompt="hi",
             output_format="text",
-            skip_permissions=True,
+            permission_mode="bypassPermissions",
+            is_bypass_permissions_mode_available=True,
             stdout=io.StringIO(),
             stderr=io.StringIO(),
             workspace_root=tmp_path,

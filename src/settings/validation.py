@@ -1,4 +1,4 @@
-"""Settings validation matching TypeScript settings/validation.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

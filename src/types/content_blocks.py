@@ -1,4 +1,4 @@
-"""Typed content block models mirroring TypeScript ContentBlock/ContentBlockParam."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

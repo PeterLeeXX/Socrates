@@ -1,7 +1,6 @@
 """
 Post-compact cleanup — clear caches and tracking state after compaction.
 
-Port of ``typescript/src/services/compact/postCompactCleanup.ts``.
 """
 
 from __future__ import annotations

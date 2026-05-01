@@ -1,5 +1,4 @@
 """
-Async memory pre-fetch 鈥?aligned with the memory prefetch reference behavior.
 
 Scans memory file headers and selects the most relevant ones (up to 5)
 for progressive disclosure during conversation.
@@ -98,7 +97,6 @@ async def scan_memory_files(
     """
     Scan a directory for memory files and parse their headers.
 
-    Mirrors TS scanMemoryFiles from memoryScan.ts.
     Excludes MEMORY.md (already in system prompt).
     """
     dir_path = Path(memory_dir)
@@ -134,7 +132,7 @@ def format_memory_manifest(headers: list[MemoryHeader]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Relevance selection 鈥?simplified version of TS findRelevantMemories
+# Relevance selection - simplified version of TS findRelevantMemories
 # ---------------------------------------------------------------------------
 
 async def find_relevant_memories(
@@ -145,8 +143,6 @@ async def find_relevant_memories(
 ) -> list[RelevantMemory]:
     """
     Find memory files relevant to a query.
-
-    Mirrors TS findRelevantMemories from findRelevantMemories.ts.
 
     In the TS implementation, this uses a side query to Sonnet to select
     relevant memories. In our Python implementation, we support two modes:
@@ -217,7 +213,7 @@ def _select_with_heuristic(
     query: str,
     headers: list[MemoryHeader],
 ) -> list[RelevantMemory]:
-    """Simple keyword-matching heuristic for memory selection."""
+    """Project-native implementation."""
     query_lower = query.lower()
     query_words = set(query_lower.split())
 

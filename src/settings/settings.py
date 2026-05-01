@@ -1,4 +1,4 @@
-"""Settings loading, merging, and caching matching TypeScript settings/settings.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

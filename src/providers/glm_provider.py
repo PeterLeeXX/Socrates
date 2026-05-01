@@ -56,6 +56,6 @@ class GLMProvider(OpenAICompatibleProvider):
             "zai/glm-4.5",
             "zai/glm-4.6",
             "zai/glm-4.7",
-            # GLM-3 series (legacy)
+            # GLM-3 series
             "zai/glm-3-turbo",
         ]

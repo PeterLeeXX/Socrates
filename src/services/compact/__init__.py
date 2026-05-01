@@ -1,9 +1,6 @@
 """
 Compression pipeline for context management.
 
-Implements the 5-layer compression pipeline matching TypeScript
-``typescript/src/services/compact/``:
-
 1. tool_result_budget — Persist large tool results to disk
 2. snip_compact       — Trim old tool results (preserve structure)
 3. microcompact       — Compress intermediate tool calls

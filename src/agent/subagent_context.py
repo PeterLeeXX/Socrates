@@ -1,6 +1,5 @@
 """Subagent context creation and isolation.
 
-Mirrors createSubagentContext() from typescript/src/utils/forkedAgent.ts.
 """
 from __future__ import annotations
 
@@ -56,8 +55,6 @@ def create_subagent_context(
     overrides: SubagentContextOverrides | None = None,
 ) -> ToolContext:
     """Create an isolated ToolContext for subagents.
-
-    Mirrors createSubagentContext() from typescript/src/utils/forkedAgent.ts.
 
     By default, ALL mutable state is isolated to prevent interference:
     - read_file_fingerprints: cloned from parent

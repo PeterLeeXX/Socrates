@@ -1,4 +1,4 @@
-"""Hook execution engine — mirrors TypeScript utils/hooks.ts.
+"""
 
 Core hook execution with shell command protocol, JSON stdin/stdout,
 exit code semantics, timeout handling, and settings-driven configuration.

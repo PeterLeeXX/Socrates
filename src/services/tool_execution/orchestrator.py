@@ -1,4 +1,4 @@
-"""Tool orchestration — mirrors TypeScript toolOrchestration.ts.
+"""
 
 Two modes:
 - Mode 1: Streaming — use StreamingToolExecutor (called from query loop during streaming)

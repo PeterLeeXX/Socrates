@@ -236,7 +236,7 @@ def test_headless_stream_json_multi_turn_from_stdin(fake_wiring, tmp_path):
 # permission handling in headless mode
 
 
-def test_headless_without_skip_permissions_installs_auto_deny_handler(fake_wiring, tmp_path):
+def test_headless_default_permissions_installs_auto_deny_handler(fake_wiring, tmp_path):
     fake_wiring.append(_text_response("ok"))
 
     captured: dict = {}
@@ -269,7 +269,7 @@ def test_headless_without_skip_permissions_installs_auto_deny_handler(fake_wirin
     assert allowed is False
 
 
-def test_headless_with_skip_permissions_clears_handler(fake_wiring, tmp_path):
+def test_headless_bypass_permissions_clears_handler(fake_wiring, tmp_path):
     fake_wiring.append(_text_response("ok"))
 
     captured: dict = {}
@@ -286,7 +286,8 @@ def test_headless_with_skip_permissions_clears_handler(fake_wiring, tmp_path):
             HeadlessOptions(
                 prompt="hi",
                 output_format="text",
-                skip_permissions=True,
+                permission_mode="bypassPermissions",
+                is_bypass_permissions_mode_available=True,
                 stdout=io.StringIO(),
                 stderr=io.StringIO(),
                 workspace_root=tmp_path,

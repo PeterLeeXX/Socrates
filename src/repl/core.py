@@ -23,9 +23,8 @@ try:
     # 2. ``\x1b[27;2;13~`` -xterm ``modifyOtherKeys`` level 2 (xterm with
     #    modifyOtherKeys on, some VSCode configurations). prompt_toolkit
     #    maps this to plain ``ControlM``, so by default it's
-    #    indistinguishable from Enter -we override it.
+    #    indistinguishable from Enter - we override it.
     #
-    # This matches the TypeScript reference's behavior in ``useTextInput.ts``
     # which explicitly treats both CSI 13;2u and CSI 27;2;13~ as "insert
     # newline" on Shift+Enter.
     if not hasattr(_pt_ansi_seq, "_socrates_shift_enter_registered"):
@@ -87,10 +86,8 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 class _SlashOnlyCompleter(Completer):
-    """Trigger autocompletion only for slash commands, matching the reference
+    """
     Claude Code behavior.
-
-    Rules (mirrors ``typescript/src/utils/suggestions/commandSuggestions.ts``):
 
     * If the whole buffer starts with ``/`` and the cursor is on the first
       token, complete slash commands (prefix match against the command name).
@@ -234,7 +231,6 @@ except ModuleNotFoundError:  # pragma: no cover - prompt_toolkit guarded above
 def _format_edit_summary_text(adds: int, removes: int) -> str:
     """Format an "Added X lines, removed Y lines" summary.
 
-    Mirrors the pluralization in the TS reference component
     (``FileEditToolUpdatedMessage.tsx``) -sentence-cased standalone
     clauses, lowercase ``removed`` after a comma.
     """
@@ -298,7 +294,6 @@ class SocratesREPL:
         # Mark this process as running an interactive session BEFORE we build
         # the tool registry. Tools like TaskCreate / TaskUpdate / TodoWrite
         # toggle themselves on/off via ``is_todo_v2_enabled()`` which reads
-        # this flag (mirroring ``typescript/src/bootstrap/state.ts``).
         from src.bootstrap.state import set_is_interactive
 
         set_is_interactive(True)
@@ -364,7 +359,6 @@ class SocratesREPL:
         else:
             self.tool_context.permission_handler = self._handle_permission_request
 
-        # Persistent bottom-toolbar accumulators. Mirrors the TS Ink
         # status line that always shows model |provider |cwd |turn /
         # token totals.
         self._stats_turns: int = 0
@@ -426,8 +420,6 @@ class SocratesREPL:
 
         # ``_SlashOnlyCompleter`` handles ``/`` slash commands; the
         # ``AtFileCompleter`` adds ``@``-mention file completion that
-        # mirrors the TS Ink reference (see
-        # ``typescript/src/hooks/fileSuggestions.ts``). Merging keeps
         # both behaviors active simultaneously without either side
         # interfering with the other's trigger.
         from prompt_toolkit.completion import merge_completers
@@ -442,8 +434,6 @@ class SocratesREPL:
 
         # Key bindings.
         #
-        # Multiline-entry contract (mirrors
-        # ``typescript/src/hooks/useTextInput.ts#handleEnter``):
         #
         #   * plain Enter          -> submit
         #   * Shift+Enter          -> insert newline  (terminals with
@@ -455,7 +445,7 @@ class SocratesREPL:
         #                             "\x1b\r", which prompt_toolkit
         #                             parses as Escape+ControlM)
         #   * ``\`` + Enter        -> insert newline  (portable fallback
-        #                             that works on ANY terminal -the
+        #                             that works on ANY terminal - the
         #                             trailing backslash is removed and
         #                             replaced by a real newline)
         #
@@ -472,7 +462,6 @@ class SocratesREPL:
                 # silently swallowed the keystroke, so paths like
                 # ``src/repl/core.py`` were untypable. Only auto-pop
                 # the slash-command menu when ``/`` is the first
-                # character of the buffer (mirrors the TS reference's
                 # ``commandSuggestions`` trigger rule).
                 buf = event.current_buffer
                 was_empty = buf.text == ""
@@ -484,7 +473,6 @@ class SocratesREPL:
             def _enter_submits_or_backslash_newline(event):  # type: ignore[no-untyped-def]
                 """Enter: submit, or convert trailing ``\\`` into a newline.
 
-                Exactly mirrors the TypeScript ``handleEnter`` logic. When a
                 completion popup is open we accept the current selection and
                 close the popup (prompt_toolkit's default Enter behavior) so
                 the slash-command menu still works as expected.
@@ -544,7 +532,6 @@ class SocratesREPL:
     def _bottom_toolbar(self):
         """Single-line status footer for the input prompt.
 
-        Mirrors the TS Ink reference's persistent status row at the
         bottom: provider, model, current working directory, and
         accumulated turn / token counts for the session. Kept terse so
         it doesn't compete with the input row for attention.
@@ -576,7 +563,6 @@ class SocratesREPL:
         :class:`LiveStatus`) and any other path that needs to surface a
         user-authored message into scrollback. Each line is padded to
         the terminal width so the highlight reaches the right edge,
-        matching the boxed input row Claude Code renders for user
         messages.
         """
 
@@ -1100,7 +1086,6 @@ class SocratesREPL:
     def _format_edit_diff_preview(self, hunks: list[dict]):
         """Render an Edit/MultiEdit structured patch as a Rich :class:`Group`.
 
-        Mirrors the structured edit activity body: a one-line
         ``Added X lines, removed Y lines`` summary above the line-numbered
         diff with red/green markers and shaded backgrounds. Long diffs are
         truncated with a ``... +N more diff lines`` footer to keep the
@@ -1259,7 +1244,6 @@ class SocratesREPL:
             return "done"
 
         if tool_name == "Write":
-            # Port of ``typescript/src/tools/FileWriteTool/UI.tsx`` -            # ``FileWriteToolCreatedMessage`` renders ``Wrote N lines to
             # <path>`` followed by the first MAX_LINES_TO_RENDER (10) lines
             # of the new content and a ``... +M lines`` footer when truncated.
             # Update results render a diff in the TS UI; we keep that as a
@@ -1285,7 +1269,6 @@ class SocratesREPL:
             is_update = "has been updated successfully" in raw
 
             short = self._shorten_path_text(path)
-            # ``countLines`` parity: trailing newline is a terminator.
             if content:
                 parts = content.split("\n")
                 n = len(parts) - 1 if content.endswith("\n") else len(parts)
@@ -1326,7 +1309,6 @@ class SocratesREPL:
             return f"{header}\n{body}{footer}"
 
         if tool_name in ("Edit", "MultiEdit"):
-            # Port of ``reference UI components/FileEditToolUpdatedMessage.tsx``:
             # show ``Added X lines, removed Y lines`` plus the line-numbered
             # diff with red/green markers, instead of a bare ``done``.
             if parsed:
@@ -1420,7 +1402,6 @@ class SocratesREPL:
 
         Pulls built-in agents and merges any extras registered on
         ``tool_context.options.agent_definitions`` so that user/plugin agents
-        participate in the same ``@agent-<type>`` lookup that the TypeScript
         ``processAgentMentions`` uses.
         """
         try:
@@ -1551,7 +1532,6 @@ class SocratesREPL:
     # Task widget (coalesced Task* / TodoWrite snapshot)
     # ------------------------------------------------------------------
     #
-    # Mirrors ``reference UI components/TaskListV2.tsx``: instead of
     # printing one bullet per ``TaskCreate``/``TaskUpdate`` call, we wait
     # until a run of task-management calls is finished and then render
     # the current task-state once.
@@ -1675,10 +1655,14 @@ class SocratesREPL:
         model_label = self.provider.model or "Unknown model"
 
         mascot_ascii = "\n".join([
-            "  /\\__/\\",
-            " / o  o \\",
-            "(  __  )",
-            " \\/__/  ",
+            "                /🎀 フ フ",
+            "               │ 　_　_│ ",
+            "             ／` ミ＿xノ",
+            "            /　　　　 |",
+            "           /　 \　　 ﾉ",
+            "       /￣│　　|　|　|",
+            "      (二)\＿＿\＿)__)",
+            "       \二)",
         ])
 
         if Panel is None or Group is None or Align is None or Table is None or Text is None or Columns is None:
@@ -1735,7 +1719,7 @@ class SocratesREPL:
                     # transcript and the next prompt. The bg highlight
                     # on the prompt itself (PromptSession ``style``)
                     # provides the visual cue that the next row is
-                    # user input -no divider needed.
+                    # user input - no divider needed.
                     self.console.print()
                     # The prompt session is configured with ``multiline=True``
                     # up front so that newlines (via Shift+Enter / Meta+Enter
@@ -2229,11 +2213,8 @@ class SocratesREPL:
         Args:
             user_input: The user message to send.
             max_turns: Maximum number of tool call turns. None means unlimited
-                (matching TS interactive REPL behavior). Only set for SDK/non-interactive mode.
         """
         # Expand ``@path`` mentions into context attachments before the model
-        # sees the message. Port of
-        # ``typescript/src/utils/attachments.ts#processAtMentionedFiles``.
         from src.command_system.input_processing import (
             expand_agent_mentions,
             expand_at_mentions,
@@ -2243,8 +2224,6 @@ class SocratesREPL:
         cwd_for_mentions = str(self.tool_context.cwd or self.tool_context.workspace_root)
         _, at_attachments = expand_at_mentions(user_input, cwd=cwd_for_mentions)
 
-        # Port of ``processAgentMentions`` from
-        # ``typescript/src/utils/attachments.ts``: if the user types
         # ``@agent-explore`` (or the autocomplete form ``@"explore (agent)"``),
         # attach a system-reminder telling the model to delegate to that
         # agent via the Agent tool. Mentions of unknown agents are ignored so
@@ -2354,7 +2333,6 @@ class SocratesREPL:
                 # Track whether a Task*/TodoWrite round is "in flight" so we
                 # can coalesce a run of task-management calls into a single
                 # TaskListV2-style snapshot instead of dumping one ``-` bullet
-                # per call. This mirrors the behaviour of
                 # ``reference UI components/TaskListV2.tsx``, which re-renders
                 # a single widget each time the ``tasks`` slice of AppState
                 # changes.
@@ -2364,7 +2342,6 @@ class SocratesREPL:
                 # message, printing all ``-Tool(args)`` lines eagerly and
                 # then dumping every ``-preview`` underneath stacks the
                 # output into one tall, hard-to-scan block. Defer each
-                # header so it prints right above its matching result -                # this is what produces the per-call "small block" look
                 # in the TS Ink reference (see
                 # ``reference UI components/REPL.tsx``).
                 pending_tool_use_prints: dict[str, str] = {}
@@ -2380,8 +2357,7 @@ class SocratesREPL:
                     if isinstance(msg, StreamEvent):
                         if msg.type == "stream_request_start":
                             api_call_count += 1
-                            # The TypeScript reference does not print a
-                            # ``Thinking...` line between API calls -the
+                            # ``Thinking...` line between API calls - the
                             # spinner already communicates activity. Printing
                             # it between every tool round-trip clutters the
                             # transcript, so we suppress it here to match
@@ -2461,7 +2437,7 @@ class SocratesREPL:
                             for block in content:
                                 if isinstance(block, ToolResultBlock):
                                     # Suppress per-call ``-...`` result
-                                    # output for task widget tools -the
+                                    # output for task widget tools - the
                                     # flushed snapshot already reflects the
                                     # post-call state. Errors still surface
                                     # so the user sees validation problems.
@@ -2507,7 +2483,6 @@ class SocratesREPL:
                 # final "N tasks (...)" summary lands in the transcript.
                 _flush_task_snapshot_if_any()
 
-                # If a tool_use never received a matching result (turn cut
                 # short, error mid-loop), surface the headers we were
                 # holding so the user can still see what was attempted.
                 for header in pending_tool_use_prints.values():

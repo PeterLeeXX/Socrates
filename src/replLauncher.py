@@ -1,10 +1,4 @@
-"""REPL launcher shim.
-
-Mirrors the role of ``typescript/src/replLauncher.tsx`` in the Python
-port: a thin factory that boots the interactive prompt_toolkit/Rich REPL.
-Keeping a dedicated entrypoint here makes it easy for embedders to start
-the default interactive UI without reaching into the CLI module.
-"""
+"""REPL launcher."""
 
 from __future__ import annotations
 
@@ -25,8 +19,7 @@ def launch_repl(
     """Boot the default interactive REPL.
 
     Args:
-        workspace_root: Reserved for API compatibility; the REPL uses the
-            current working directory.
+        workspace_root: Reserved; the REPL uses the current working directory.
         stream: Whether the REPL should enable live streaming.
 
     Returns:

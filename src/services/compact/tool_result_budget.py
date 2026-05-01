@@ -1,5 +1,5 @@
 """
-Layer 1: Tool-result budget 鈥?persist large tool results to disk.
+Layer 1: Tool-result budget - persist large tool results to disk.
 
 The cheapest compression layer.  Tool results exceeding a token threshold
 are written to a session-local directory and replaced in-message with a
@@ -22,7 +22,7 @@ from ...token_estimation import count_tokens
 
 logger = logging.getLogger(__name__)
 
-# Threshold in estimated tokens 鈥?results above this are offloaded
+# Threshold in estimated tokens - results above this are offloaded
 DEFAULT_MAX_RESULT_TOKENS = 8_000
 
 # Reference marker template
@@ -181,7 +181,7 @@ def apply_tool_result_budget(
                 else:
                     new_content.append(block)
 
-            # Handle raw dict tool_result (backward compat)
+            # Handle raw dict tool_result blocks.
             elif isinstance(block, dict) and block.get("type") == "tool_result":
                 tuid = block.get("tool_use_id", "")
                 if tuid in already_stored:

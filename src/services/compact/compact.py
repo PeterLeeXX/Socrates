@@ -1,8 +1,6 @@
 """
 Core compaction — LLM summarization of conversation history.
 
-Port of ``typescript/src/services/compact/compact.ts``.
-
 Provides ``compact_conversation()`` for full compaction and
 ``partial_compact_conversation()`` for partial (prefix/suffix) compaction.
 """
@@ -29,9 +27,9 @@ from ...compact_service.messages import (
     is_compact_boundary_message,
 )
 from ...context_system.microcompact import (
+    microcompact_api_messages,
     strip_images_from_messages,
     strip_images_from_typed_messages,
-    microcompact_messages,
 )
 from ...token_estimation import (
     count_messages_tokens,
@@ -64,7 +62,6 @@ MAX_PTL_RETRIES = 3
 # Marker prepended after truncation to maintain valid message structure
 PTL_RETRY_MARKER = "[earlier conversation truncated for compaction retry]"
 
-# System prompt for the summarization model call. Matches TS reference
 # (compact.ts:1305) — keeps the summarizer focused on summarizing rather
 # than continuing the parent agent task.
 COMPACT_SYSTEM_PROMPT = (
@@ -88,9 +85,6 @@ _PTL_TOKEN_GAP_REGEX = re.compile(
 def parse_prompt_too_long_token_gap(error_str: str) -> int | None:
     """
     Parse the token gap from a prompt-too-long error message.
-
-    Port of ``parsePromptTooLongTokenCounts`` + ``getPromptTooLongTokenGap``
-    from ``typescript/src/services/api/errors.ts``.
 
     Returns ``actualTokens - limitTokens`` when the message matches the
     standard Anthropic format (e.g., ``prompt is too long: 137500 tokens > 135000 maximum``),
@@ -227,7 +221,6 @@ def truncate_head_for_ptl_retry(
     Falls back to dropping 20% of groups when the gap is unknown.
     Returns None when nothing can be dropped without leaving an empty summarize set.
 
-    Port of ``truncateHeadForPTLRetry`` in compact.ts.
     """
     # Strip our own synthetic marker from a previous retry before grouping.
     input_messages = messages
@@ -294,8 +287,6 @@ async def compact_conversation(
     """
     Compact a conversation by summarizing older messages via LLM.
 
-    This is the Python equivalent of the TypeScript ``compactConversation()``.
-
     Args:
         context: Compaction context with provider, model, messages, etc.
 
@@ -320,7 +311,7 @@ async def compact_conversation(
 
     # Pre-process: strip images, microcompact
     api_messages_stripped = strip_images_from_messages(api_messages)
-    compacted_api, _mc_saved = microcompact_messages(api_messages_stripped)
+    compacted_api, _mc_saved = microcompact_api_messages(api_messages_stripped)
 
     # Build summary prompt
     prompt = get_compact_prompt(context.custom_instructions)
@@ -363,7 +354,7 @@ async def compact_conversation(
                     if truncated is not None:
                         truncated_api = normalize_messages_for_api(truncated)
                         truncated_stripped = strip_images_from_messages(truncated_api)
-                        messages_for_summary, _ = microcompact_messages(truncated_stripped)
+                        messages_for_summary, _ = microcompact_api_messages(truncated_stripped)
                         logger.info(
                             "PTL retry %d: dropped %d messages, %d remaining (gap=%s)",
                             attempt,
@@ -516,7 +507,7 @@ async def partial_compact_conversation(
 
     # Pre-process
     api_messages_stripped = strip_images_from_messages(api_messages)
-    compacted_api, _ = microcompact_messages(api_messages_stripped)
+    compacted_api, _ = microcompact_api_messages(api_messages_stripped)
 
     # Build messages for the summary API call with PTL retry
     messages_for_summary: list[dict[str, Any]] = list(compacted_api)
@@ -549,7 +540,7 @@ async def partial_compact_conversation(
                 if truncated is not None:
                     truncated_api = normalize_messages_for_api(truncated)
                     truncated_stripped = strip_images_from_messages(truncated_api)
-                    messages_for_summary, _ = microcompact_messages(truncated_stripped)
+                    messages_for_summary, _ = microcompact_api_messages(truncated_stripped)
                     messages_to_summarize = truncated
                     continue
                 # Fallback: simple halving
@@ -586,7 +577,6 @@ async def partial_compact_conversation(
 
     # Annotate the boundary with preserved-segment metadata so the
     # message-loader can relink kept messages into the post-compact chain.
-    # Anchor selection mirrors compact.ts:1080-1083:
     #   'up_to' (suffix kept) → anchor = last summary message UUID
     #   'from'/'later' (prefix kept) → anchor = boundary UUID
     if direction in ("up_to", "earlier"):

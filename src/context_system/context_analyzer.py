@@ -271,7 +271,6 @@ def format_context_as_markdown(data: ContextData) -> str:
     Format ContextData as a Markdown table for the REPL.
 
     This is the non-interactive fallback output, mirroring
-    the TypeScript context-noninteractive.ts output.
     """
     lines: list[str] = [
         "## Context Usage",

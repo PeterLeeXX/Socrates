@@ -101,27 +101,20 @@ class TestWithRetry(unittest.TestCase):
 
         asyncio.run(_run())
 
-    def test_fallback_model_on_529(self) -> None:
+    def test_overloaded_errors_stop_after_529_limit(self) -> None:
         async def _run() -> None:
-            models_used: list[str] = []
-
             async def operation(attempt: int, ctx: RetryContext) -> str:
-                models_used.append(ctx.model)
-                if ctx.model == "fallback-model":
-                    return "ok"
                 raise OverloadedError()
 
-            result = await with_retry(
-                operation,
-                RetryOptions(
-                    max_retries=10,
-                    model="primary-model",
-                    fallback_model="fallback-model",
-                    initial_consecutive_529_errors=2,
-                ),
-            )
-            self.assertEqual(result, "ok")
-            self.assertIn("fallback-model", models_used)
+            with self.assertRaises(CannotRetryError):
+                await with_retry(
+                    operation,
+                    RetryOptions(
+                        max_retries=10,
+                        model="primary-model",
+                        initial_consecutive_529_errors=2,
+                    ),
+                )
 
         asyncio.run(_run())
 

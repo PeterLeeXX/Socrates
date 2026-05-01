@@ -1,6 +1,5 @@
 """Analytics event types and logging.
 
-Mirrors TypeScript analytics/events.ts.
 """
 from __future__ import annotations
 

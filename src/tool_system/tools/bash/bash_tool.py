@@ -114,8 +114,6 @@ def _bash_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
 
     # ``run_in_background: true`` detaches the command so the agent can keep
     # coordinating while a long-running job (dev server, build, long test
-    # suite, ...) makes progress. Mirrors
-    # ``typescript/src/tools/BashTool/BashTool.tsx`` ``spawnBackgroundTask``
     # behaviour: we return immediately with a task id and let the model poll
     # the output via ``TaskOutput``.
     if tool_input.get("run_in_background"):
@@ -150,7 +148,7 @@ def _bash_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
             output={"cwd": str(context.cwd), "stdout": "", "stderr": ""},
         )
 
-    # Resolve timeout: prefer explicit timeout (ms), fall back to timeout_s (legacy), then default
+    # Resolve timeout from milliseconds.
     timeout_ms = tool_input.get("timeout")
     if timeout_ms is not None:
         max_ms = get_max_timeout_ms()
@@ -160,13 +158,10 @@ def _bash_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
             raise ToolInputError(f"timeout must not exceed {max_ms} ms")
         timeout_s = int(timeout_ms / 1000)
     else:
-        timeout_s = tool_input.get("timeout_s")
-        if timeout_s is None:
-            timeout_s = int(get_default_timeout_ms() / 1000)
+        timeout_s = int(get_default_timeout_ms() / 1000)
         if not isinstance(timeout_s, int) or timeout_s < 1 or timeout_s > 600:
-            raise ToolInputError("timeout_s must be an integer between 1 and 600")
+            raise ToolInputError("timeout must be between 1000 and 600000 ms")
 
-    # Persist cwd across invocations (port of ``typescript/src/utils/Shell.ts``,
     # which writes PWD to ``cwdFilePath`` after every command and calls
     # ``setCwdState()``). We wrap the user's command so that a trailing ``pwd``
     # writes the shell's final directory into a tempfile, and read it back to
@@ -204,7 +199,7 @@ def _bash_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
         # If the command succeeded in changing directory, promote the new cwd
         # into the shared ToolContext so follow-up Bash invocations start
         # there. Errors (e.g. command exited mid-flight before ``pwd`` ran)
-        # fall through quietly 鈥?we keep the prior cwd.
+        # fall through quietly - we keep the prior cwd.
         try:
             with open(cwd_path, "r", encoding="utf-8") as handle:
                 final_cwd_text = handle.read().strip()
@@ -223,7 +218,7 @@ def _bash_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
                 context.cwd = new_cwd
                 cwd = new_cwd
         except ToolPermissionError:
-            # cd'd outside the allowed roots 鈥?don't track it but don't fail
+            # cd'd outside the allowed roots - don't track it but don't fail
             # the call either (matches the TS behavior where the process can
             # roam freely but the UI cwd clamps to the workspace).
             pass
@@ -366,10 +361,6 @@ BashTool: Tool = build_tool(
             "cwd": {
                 "type": "string",
                 "description": "Working directory (absolute path)",
-            },
-            "timeout_s": {
-                "type": "integer",
-                "description": "Timeout in seconds (1-600)",
             },
             "timeout": {
                 "type": "integer",

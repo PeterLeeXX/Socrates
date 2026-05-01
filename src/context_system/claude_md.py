@@ -1,6 +1,4 @@
 """
-Multi-level CLAUDE.md loading — aligned with typescript/src/utils/claudemd.ts.
-
 Loading order (reverse priority — later entries take precedence):
   1. Managed memory (/etc/claude-code/CLAUDE.md)
   2. User memory (~/.claude/CLAUDE.md)
@@ -51,7 +49,7 @@ def clear_memory_file_caches() -> None:
 
 
 def reset_get_memory_files_cache() -> None:
-    """Clear cache and mark for reload (mirrors TS resetGetMemoryFilesCache)."""
+    """Project-native implementation."""
     clear_memory_file_caches()
 
 
@@ -78,7 +76,7 @@ def _get_additional_directories() -> list[str]:
 
 
 def _should_disable_claude_md() -> bool:
-    """Mirrors TS shouldDisableClaudeMd logic."""
+    """Project-native implementation."""
     if os.environ.get("CLAUDE_CODE_DISABLE_CLAUDE_MDS", "").lower() in ("1", "true", "yes"):
         return True
     if _is_bare_mode() and len(_get_additional_directories()) == 0:
@@ -100,7 +98,6 @@ def _extract_include_paths(text: str, base_path: str) -> list[str]:
     """
     Extract @include paths from markdown text, skipping code blocks.
 
-    Mirrors TS extractIncludePathsFromTokens but uses a simpler
     regex-based approach (no full markdown lexer dependency).
     """
     paths: set[str] = set()
@@ -252,7 +249,6 @@ async def process_memory_file(
     Recursively process a memory file and its @include references.
 
     Returns list with main file first, then included files.
-    Mirrors TS processMemoryFile from claudemd.ts.
     """
     normalized = os.path.normcase(os.path.realpath(file_path))
     if normalized in processed_paths or depth >= MAX_INCLUDE_DEPTH:
@@ -299,7 +295,6 @@ async def process_md_rules(
     """
     Process all .md files in a .claude/rules/ directory and subdirectories.
 
-    Mirrors TS processMdRules from claudemd.ts.
     """
     rules_path = Path(rules_dir)
     if not rules_path.is_dir():
@@ -337,7 +332,6 @@ def _path_in_working_path(path: str, working_path: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# get_memory_files — main entry point (mirrors TS getMemoryFiles)
 # ---------------------------------------------------------------------------
 
 async def get_memory_files(
@@ -347,7 +341,6 @@ async def get_memory_files(
     """
     Load all memory files in priority order.
 
-    Mirrors TS getMemoryFiles from claudemd.ts.
     Loading order: Managed → User → Project → Local
     Project/Local walk from root to CWD (closer = higher priority).
 
@@ -450,14 +443,12 @@ async def get_memory_files(
 
 
 # ---------------------------------------------------------------------------
-# get_claude_mds — format memory files for injection (mirrors TS getClaudeMds)
 # ---------------------------------------------------------------------------
 
 def get_claude_mds(memory_files: list[MemoryFileInfo]) -> str:
     """
     Format memory files into the prompt string.
 
-    Mirrors TS getClaudeMds from claudemd.ts.
     """
     memories: list[str] = []
 

@@ -1,6 +1,5 @@
 """CLI protocol layer shared by interactive and non-interactive entrypoints.
 
-Port of ``typescript/src/cli/`` focused on the pieces that give Claude Code a
 stable machine-readable surface (NDJSON stdin/stdout, exit helpers, output
 formatting). These modules intentionally contain *no* rendering code so they
 can be used from headless pipelines and SDK clients without pulling in Rich.

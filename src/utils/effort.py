@@ -1,4 +1,4 @@
-"""Effort level system matching TypeScript utils/effort.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

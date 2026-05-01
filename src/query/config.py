@@ -29,7 +29,6 @@ class QueryConfig:
     structured_output: dict[str, Any] | None = None
     extra_headers: dict[str, str] | None = None
     extra_body: dict[str, Any] | None = None
-    fallback_model: str | None = None
     query_source: str = "repl_main_thread"
     session_id: str = ""
 
@@ -54,7 +53,6 @@ class FrozenQueryConfig:
     tool_use_summary_enabled: bool = True
     emit_tool_use_summaries: bool = True
     fast_mode_enabled: bool = False
-    fallback_model: str | None = None
     query_source: str = "repl_main_thread"
     session_id: str = ""
 
@@ -76,7 +74,6 @@ def build_query_config(
     stop_hooks_enabled: bool | None = None,
     emit_tool_use_summaries: bool | None = None,
     fast_mode_enabled: bool | None = None,
-    fallback_model: str | None = None,
     query_source: str | None = None,
     **kwargs: Any,
 ) -> FrozenQueryConfig:
@@ -112,8 +109,6 @@ def build_query_config(
         overrides["emit_tool_use_summaries"] = emit_tool_use_summaries
     if fast_mode_enabled is not None:
         overrides["fast_mode_enabled"] = fast_mode_enabled
-    if fallback_model is not None:
-        overrides["fallback_model"] = fallback_model
     if query_source is not None:
         overrides["query_source"] = query_source
 

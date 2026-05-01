@@ -1,7 +1,5 @@
 """NDJSON helpers.
 
-Port of ``typescript/src/cli/ndjsonSafeStringify.ts``.
-
 ``json.dumps`` leaves U+2028 / U+2029 unescaped by default. Those code points
 are valid in JSON but are treated as line terminators by a number of
 line-oriented NDJSON receivers (most notably the JavaScript ``split`` family
@@ -24,7 +22,6 @@ _LINE_SEPARATORS = {
 def ndjson_safe_dumps(value: Any) -> str:
     """Serialize ``value`` to a single NDJSON-safe JSON string.
 
-    Mirrors ``ndjsonSafeStringify`` from the TypeScript implementation.
     """
 
     encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"))

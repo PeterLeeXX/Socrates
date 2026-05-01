@@ -58,9 +58,7 @@ class PipelineConfig:
     snip_keep_recent: int = 10
 
     # Layer 3: microcompact
-    # TS time-based MC is disabled by default (GrowthBook enabled: false),
-    # cached MC uses API cache_edits (no local mutation), and legacy MC was
-    # removed.  So microcompact is effectively a no-op on the main thread.
+    # Microcompact is disabled by default for the main thread.
     mc_enabled: bool = False
     mc_keep_recent: int = 5
     mc_time_config: TimeBasedMCConfig | None = None
@@ -70,7 +68,6 @@ class PipelineConfig:
 
     # Layer 5: autocompact
     context_window: int = 200_000
-    autocompact_threshold: float = 0.80
     autocompact_tracking: AutoCompactTracking | None = None
 
     # Layer 5: post-compact attachment context
@@ -164,11 +161,9 @@ class CompressionPipeline:
             logger.warning("Layer 2 (snip_compact) failed", exc_info=True)
 
         # --- Layer 3: Microcompact ---
-        # Gated by mc_enabled (default False) to match TS where microcompact
-        # is a no-op on the main thread (time-based disabled, cached MC uses
-        # API cache_edits, legacy removed).  Clearing tool results locally
-        # breaks file_unchanged (model told to "refer to earlier content"
-        # that microcompact already erased → falls back to Bash cat).
+        # Gated by mc_enabled (default False). Clearing tool results locally
+        # can break file_unchanged cases where the model is asked to refer to
+        # earlier content that microcompact already erased.
         if cfg.mc_enabled:
             try:
                 current_messages, saved = microcompact_typed_messages(
@@ -210,7 +205,6 @@ class CompressionPipeline:
                     cfg.context_window,
                     cfg.provider,
                     cfg.model,
-                    threshold_fraction=cfg.autocompact_threshold,
                     tracking=cfg.autocompact_tracking,
                     custom_instructions=cfg.custom_instructions,
                     read_file_state=cfg.read_file_state,

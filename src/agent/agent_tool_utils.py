@@ -1,6 +1,5 @@
 """Agent tool filtering and resolution utilities.
 
-Mirrors typescript/src/tools/AgentTool/agentToolUtils.ts.
 """
 from __future__ import annotations
 
@@ -43,8 +42,6 @@ def filter_tools_for_agent(
 ) -> Tools:
     """Filter available tools based on agent type and mode.
 
-    Mirrors filterToolsForAgent() from typescript/src/tools/AgentTool/agentToolUtils.ts.
-
     - MCP tools are always allowed for all agents.
     - ExitPlanMode is allowed for agents in plan mode.
     - ALL_AGENT_DISALLOWED_TOOLS are always blocked.
@@ -86,8 +83,6 @@ def resolve_agent_tools(
     is_async: bool = False,
 ) -> ResolvedAgentTools:
     """Resolve and validate agent tools against available tools.
-
-    Mirrors resolveAgentTools() from typescript/src/tools/AgentTool/agentToolUtils.ts.
 
     Handles wildcard expansion, validation, and disallowed tool filtering.
     """
@@ -204,7 +199,6 @@ def finalize_agent_tool(
 ) -> AgentToolResult:
     """Extract final result from agent messages.
 
-    Mirrors finalizeAgentTool() from typescript/src/tools/AgentTool/agentToolUtils.ts.
     """
     # Find the last assistant message
     last_assistant: AssistantMessage | None = None

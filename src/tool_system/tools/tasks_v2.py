@@ -18,7 +18,6 @@ def _new_task_id() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Result formatting helpers (port of TS mapToolResultToToolResultBlockParam)
 # ---------------------------------------------------------------------------
 
 
@@ -504,7 +503,6 @@ def _task_output_call(tool_input: dict[str, Any], context: ToolContext) -> ToolR
     # true``) register themselves on ``context.background_bash_tasks``. Check
     # that registry first so ``TaskOutput`` doubles as the polling tool for
     # long-running shell commands, matching
-    # ``typescript/src/tools/BashTool/BashTool.tsx``.
     bg_tasks = getattr(context, "background_bash_tasks", None) or {}
     if task_id in bg_tasks:
         from src.tool_system.tools.bash.background import read_background_output
@@ -577,7 +575,7 @@ Get the output of a running or completed background task.
 - Use this tool to check on the progress or results of background tasks
 """,
     description="Get output for a background task.",
-    aliases=("AgentOutputTool", "BashOutputTool"),
+    aliases=(),
     strict=True,
     max_result_size_chars=100_000,
     is_read_only=lambda _input: True,

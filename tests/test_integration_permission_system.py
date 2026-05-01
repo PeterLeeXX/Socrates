@@ -294,15 +294,15 @@ class TestBuildAppSmoke(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, f"pip install failed: {result.stderr}")
 
-    def test_main_cli_tools_command(self) -> None:
+    def test_installed_cli_help_command(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-m", "src.main", "tools", "--limit", "5"],
+            [sys.executable, "-m", "src.cli", "--help"],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        self.assertEqual(result.returncode, 0, f"CLI tools command failed: {result.stderr}")
-        self.assertIn("Tool entries:", result.stdout)
+        self.assertEqual(result.returncode, 0, f"CLI help command failed: {result.stderr}")
+        self.assertIn("Socrates - Claude Code Python Implementation", result.stdout)
 
 
 class TestToolPermissionContextHelpers(unittest.TestCase):

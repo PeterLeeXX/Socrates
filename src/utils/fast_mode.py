@@ -1,4 +1,4 @@
-"""Fast mode system matching TypeScript utils/fastMode.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 

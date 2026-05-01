@@ -1,6 +1,4 @@
 """
-Git context collection — aligned with typescript/src/context.ts getGitStatus().
-
 Runs parallel git commands: branch, default branch, status --short,
 log --oneline -n 5, config user.name.  Status truncated at 2000 chars.
 Results are memoized per session; call clear_git_caches() to invalidate.
@@ -41,7 +39,6 @@ class GitContextSnapshot:
 
 
 # ---------------------------------------------------------------------------
-# Module-level cache (mirrors TS memoize on getGitStatus)
 # ---------------------------------------------------------------------------
 
 _git_context_cache: GitContextSnapshot | None = None
@@ -118,7 +115,6 @@ def get_is_git(cwd: str | None = None) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# collect_git_context — main entry point (mirrors TS getGitStatus)
 # ---------------------------------------------------------------------------
 
 async def collect_git_context(
@@ -127,7 +123,6 @@ async def collect_git_context(
     """
     Collect a comprehensive git context snapshot.
 
-    Mirrors TS getGitStatus() from context.ts.
     Runs multiple git commands in parallel for speed.
     Results are memoized; call clear_git_caches() to invalidate.
     """
@@ -194,7 +189,6 @@ def format_git_status(ctx: GitContextSnapshot) -> str:
     """
     Format git context as a string for the systemContext.gitStatus key.
 
-    Mirrors TS getGitStatus output format from context.ts.
     """
     if not ctx.available:
         return ""

@@ -617,12 +617,7 @@ def get_all_skills(
 
     if project_root is not None:
         pr = Path(project_root).expanduser().resolve()
-        proj_dirs = []
-        main_path = pr / ".socrates" / "skills"
-        compat_path = pr / ".claude" / "skills"
-        proj_dirs.append(main_path)
-        if compat_path != main_path:
-            proj_dirs.append(compat_path)
+        proj_dirs = [pr / ".socrates" / "skills"]
         for pr_dir in proj_dirs:
             for s in load_skills_from_dir(pr_dir, loaded_from="project"):
                 _skill_registry[s.name] = s

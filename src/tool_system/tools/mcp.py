@@ -122,7 +122,6 @@ def _mcp_map_result_to_api(output: Any, tool_use_id: str) -> dict[str, Any]:
     """Format MCP result for the API.
 
     MCP tools can return strings or content block arrays. We pass them
-    through directly rather than JSON-wrapping, matching the TS behavior.
     """
     if isinstance(output, dict):
         # Extract the actual MCP output from our wrapper

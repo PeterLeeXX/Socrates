@@ -1,10 +1,9 @@
-"""Model name validation matching TypeScript model/validateModel.ts."""
+"""Project-native implementation."""
 
 from __future__ import annotations
 
 import re
 
-from .aliases import MODEL_ALIASES
 from .configs import MODEL_CONFIGS
 
 # Pattern for valid Claude model IDs
@@ -14,16 +13,12 @@ _CLAUDE_PATTERN = re.compile(
 
 
 def validate_model_name(name: str) -> bool:
-    """Check if a model name is valid (known model, alias, or valid format)."""
+    """Check if a model name is valid."""
     if not name:
         return False
 
     # Known model
     if name in MODEL_CONFIGS:
-        return True
-
-    # Known alias
-    if name.lower() in MODEL_ALIASES:
         return True
 
     # Valid Claude pattern

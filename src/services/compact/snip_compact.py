@@ -1,6 +1,4 @@
 """
-Layer 2: Snip compact — stub matching typescript/src/services/compact/snipCompact.ts.
-
 The TS implementation is a stub that returns null (not implemented).
 We match that behavior here to avoid aggressively trimming tool results
 that the model may need to reference later in the conversation.

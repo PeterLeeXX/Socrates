@@ -1,4 +1,4 @@
-"""Stop hooks — mirrors TypeScript query/stopHooks.ts.
+"""
 
 Handles end-of-turn hook execution, background tasks, and abort handling.
 """

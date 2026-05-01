@@ -84,7 +84,7 @@ ENV_FILE_PATTERNS: tuple[str, ...] = (
 
 
 def normalize_case_for_comparison(path: str) -> str:
-    return path.lower()
+    return path.replace("\\", "/").lower()
 
 
 def _is_within(child: Path, parent: Path) -> bool:
