@@ -6,9 +6,12 @@ import pytest
 from pathlib import Path
 
 from src.services.tool_execution.tool_hooks import resolve_hook_permission_decision
+from src.services.tool_execution.tool_execution import run_tool_use
+from src.services.tool_execution.streaming_executor import ToolUseBlock
 from src.tool_system.build_tool import build_tool, Tool
 from src.tool_system.context import ToolContext, ToolUseOptions
 from src.tool_system.protocol import ToolResult
+from src.types.content_blocks import ToolResultBlock
 from src.types.messages import AssistantMessage, create_assistant_message
 
 
@@ -105,3 +108,43 @@ class TestResolveHookPermissionDecision:
             hook_result, tool, {}, ctx, mock_can_use_tool, _make_assistant_msg(), "tu_1"
         )
         assert decision["behavior"] == "allow"
+
+
+class TestRunToolUsePermissionInput:
+    @pytest.mark.asyncio
+    async def test_permission_decision_input_replaces_tool_input(self):
+        tool = build_tool(
+            name="EchoInput",
+            input_schema={
+                "type": "object",
+                "properties": {"value": {"type": "string"}},
+                "required": ["value"],
+            },
+            call=lambda inp, ctx: ToolResult(name="EchoInput", output={"value": inp["value"]}),
+        )
+        ctx = ToolContext(
+            workspace_root=Path("/tmp"),
+            options=ToolUseOptions(tools=[tool]),
+        )
+
+        async def can_use_tool(_tool, _inp, _ctx, _msg, _tool_use_id):
+            return {"behavior": "allow", "input": {"value": "from-permission"}}
+
+        messages = []
+        async for update in run_tool_use(
+            ToolUseBlock(id="tu_1", name="EchoInput", input={"value": "original"}),
+            _make_assistant_msg(),
+            can_use_tool,
+            ctx,
+        ):
+            if update.message is not None:
+                messages.append(update.message)
+
+        content = ""
+        for msg in messages:
+            for block in msg.content:
+                if isinstance(block, ToolResultBlock):
+                    content += block.content
+
+        assert "from-permission" in content
+        assert "original" not in content

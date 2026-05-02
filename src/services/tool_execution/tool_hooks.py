@@ -8,15 +8,12 @@ Key invariant: hook 'allow' does NOT bypass settings deny/ask rules.
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, AsyncGenerator
 
 from src.types.messages import (
     AssistantMessage,
-    Message,
     create_attachment_message,
-    create_user_message,
 )
 
 if TYPE_CHECKING:
@@ -274,26 +271,14 @@ async def resolve_hook_permission_decision(
     tool_use_id: str,
 ) -> dict[str, Any]:
     if hook_permission_result is None:
-        if can_use_tool is not None and callable(can_use_tool):
-            try:
-                import asyncio
-                import inspect
-
-                if inspect.iscoroutinefunction(can_use_tool):
-                    decision = await can_use_tool(
-                        tool, tool_input, tool_use_context, assistant_message, tool_use_id
-                    )
-                else:
-                    decision = can_use_tool(
-                        tool, tool_input, tool_use_context, assistant_message, tool_use_id
-                    )
-                if isinstance(decision, dict):
-                    return decision
-                if hasattr(decision, "behavior"):
-                    return {"behavior": decision.behavior, "message": getattr(decision, "message", None)}
-            except Exception as e:
-                logger.debug("can_use_tool error: %s", e)
-        return {"behavior": "allow"}
+        return await _resolve_tool_permission(
+            tool,
+            tool_input,
+            tool_use_context,
+            can_use_tool,
+            assistant_message,
+            tool_use_id,
+        )
 
     if isinstance(hook_permission_result, dict):
         behavior = hook_permission_result.get("behavior")
@@ -388,3 +373,73 @@ async def resolve_hook_permission_decision(
             logger.debug("can_use_tool error in ask path: %s", e)
 
     return {"behavior": "allow"}
+
+
+async def _resolve_tool_permission(
+    tool: Tool,
+    tool_input: dict[str, Any],
+    tool_use_context: ToolContext,
+    can_use_tool: Any,
+    assistant_message: AssistantMessage,
+    tool_use_id: str,
+    force_decision: Any | None = None,
+) -> dict[str, Any]:
+    if can_use_tool is not None and callable(can_use_tool):
+        try:
+            import inspect
+
+            args = (tool, tool_input, tool_use_context, assistant_message, tool_use_id)
+            if force_decision is not None:
+                args = (*args, force_decision)
+            if inspect.iscoroutinefunction(can_use_tool):
+                decision = await can_use_tool(*args)
+            else:
+                decision = can_use_tool(*args)
+            return _permission_decision_to_dict(decision, tool_input)
+        except Exception as e:
+            logger.debug("can_use_tool error: %s", e)
+
+    try:
+        from src.permissions.check import has_permissions_to_use_tool
+        from src.permissions.handler import handle_permission_ask
+
+        decision = has_permissions_to_use_tool(
+            tool,
+            tool_input,
+            tool_use_context.permission_context,
+            tool_use_context=tool_use_context,
+        )
+        if getattr(decision, "behavior", None) == "ask":
+            handler = None
+            if tool_use_context.permission_handler is not None:
+                raw_handler = tool_use_context.permission_handler
+
+                def handler(tool_name: str, message: str, suggestions: Any):
+                    allowed, _user_modified = raw_handler(tool_name, message, None)
+                    return allowed, None
+
+            decision = handle_permission_ask(tool.name, decision, handler)
+        return _permission_decision_to_dict(decision, tool_input)
+    except Exception as e:
+        logger.debug("permission resolution error: %s", e)
+        return {"behavior": "deny", "message": f"Permission resolution failed: {e}"}
+
+
+def _permission_decision_to_dict(decision: Any, fallback_input: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(decision, dict):
+        if "input" not in decision:
+            updated = decision.get("updatedInput") or decision.get("updated_input")
+            if updated is not None:
+                return {**decision, "input": updated}
+        return decision
+
+    behavior = getattr(decision, "behavior", "allow")
+    updated_input = getattr(decision, "updated_input", None)
+    result: dict[str, Any] = {
+        "behavior": behavior,
+        "message": getattr(decision, "message", None),
+        "input": updated_input if updated_input is not None else fallback_input,
+    }
+    if updated_input is not None:
+        result["updatedInput"] = updated_input
+    return result

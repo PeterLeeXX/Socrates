@@ -3,10 +3,14 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from src.providers.base import ChatResponse
+from src.tool_system.build_tool import build_tool
 from src.tool_system.context import ToolContext
+from src.tool_system.protocol import ToolResult
 from src.tool_system.defaults import build_default_registry
+from src.tool_system.registry import ToolRegistry
 from src.types.content_blocks import TextBlock, ToolResultBlock, ToolUseBlock
 from src.types.messages import AssistantMessage, SystemMessage, UserMessage
 from src.utils.abort_controller import AbortController
@@ -184,6 +188,154 @@ class TestQueryLoopSingleTurn(unittest.TestCase):
             assistant_with_tool_use.get("reasoning_content"),
             "thinking trace from provider",
         )
+
+    def test_tool_execution_service_context_modifier_updates_query_context(self):
+        provider = MagicMock()
+        provider.chat_stream_response.side_effect = NotImplementedError()
+
+        def call_tool(tool_input, context):
+            def modify_context(ctx):
+                ctx.outbox.append({"source": "context_modifier", "value": tool_input["value"]})
+                return ctx
+
+            return ToolResult(
+                name="RecordContext",
+                output={"value": tool_input["value"]},
+                context_modifier=modify_context,
+            )
+
+        tool = build_tool(
+            name="RecordContext",
+            input_schema={
+                "type": "object",
+                "properties": {"value": {"type": "string"}},
+                "required": ["value"],
+            },
+            call=call_tool,
+        )
+        registry = ToolRegistry([tool])
+        self.context.options.tools = registry.list_tools()
+
+        provider.chat.side_effect = [
+            ChatResponse(
+                content="Recording.",
+                model="test",
+                usage={"input_tokens": 10, "output_tokens": 20},
+                finish_reason="tool_use",
+                tool_uses=[{
+                    "id": "toolu_ctx_001",
+                    "name": "RecordContext",
+                    "input": {"value": "from-tool"},
+                }],
+            ),
+            ChatResponse(
+                content="Done.",
+                model="test",
+                usage={"input_tokens": 30, "output_tokens": 10},
+                finish_reason="end_turn",
+                tool_uses=None,
+            ),
+        ]
+
+        params = QueryParams(
+            messages=[UserMessage(content="Record context")],
+            system_prompt="You are helpful.",
+            tools=registry.list_tools(),
+            tool_registry=registry,
+            tool_use_context=self.context,
+            provider=provider,
+            abort_controller=self.abort,
+            max_turns=10,
+        )
+
+        async def run():
+            async for _msg in query(params):
+                pass
+
+        _run(run())
+
+        self.assertEqual(
+            self.context.outbox,
+            [{"source": "context_modifier", "value": "from-tool"}],
+        )
+
+    def test_tool_execution_service_pre_tool_hook_updated_input_reaches_tool(self):
+        provider = MagicMock()
+        provider.chat_stream_response.side_effect = NotImplementedError()
+
+        tool = build_tool(
+            name="EchoInput",
+            input_schema={
+                "type": "object",
+                "properties": {"value": {"type": "string"}},
+                "required": ["value"],
+            },
+            call=lambda tool_input, _context: ToolResult(
+                name="EchoInput",
+                output={"value": tool_input["value"]},
+            ),
+        )
+        registry = ToolRegistry([tool])
+        self.context.options.tools = registry.list_tools()
+
+        provider.chat.side_effect = [
+            ChatResponse(
+                content="Echoing.",
+                model="test",
+                usage={"input_tokens": 10, "output_tokens": 20},
+                finish_reason="tool_use",
+                tool_uses=[{
+                    "id": "toolu_hook_001",
+                    "name": "EchoInput",
+                    "input": {"value": "original"},
+                }],
+            ),
+            ChatResponse(
+                content="Done.",
+                model="test",
+                usage={"input_tokens": 30, "output_tokens": 10},
+                finish_reason="end_turn",
+                tool_uses=None,
+            ),
+        ]
+
+        async def fake_pre_tool_hooks(_ctx, _tool, _processed_input, _tool_use_id):
+            yield {
+                "type": "hookUpdatedInput",
+                "updatedInput": {"value": "from-hook"},
+            }
+
+        collected = []
+        params = QueryParams(
+            messages=[UserMessage(content="Echo input")],
+            system_prompt="You are helpful.",
+            tools=registry.list_tools(),
+            tool_registry=registry,
+            tool_use_context=self.context,
+            provider=provider,
+            abort_controller=self.abort,
+            max_turns=10,
+        )
+
+        with patch(
+            "src.services.tool_execution.tool_hooks.run_pre_tool_use_hooks",
+            fake_pre_tool_hooks,
+        ):
+            async def run():
+                async for msg in query(params):
+                    collected.append(msg)
+
+            _run(run())
+
+        tool_result_content = ""
+        for msg in collected:
+            if isinstance(msg, UserMessage) and isinstance(msg.content, list):
+                for block in msg.content:
+                    if isinstance(block, ToolResultBlock):
+                        tool_result_content += block.content
+
+        self.assertIn("from-hook", tool_result_content)
+        self.assertNotIn("original", tool_result_content)
 
     def test_max_turns_limit(self):
         provider = MagicMock()

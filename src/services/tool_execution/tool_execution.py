@@ -17,9 +17,9 @@ from src.types.messages import (
     CANCEL_MESSAGE,
     AssistantMessage,
     Message,
-    create_progress_message,
     create_user_message,
 )
+from src.types.content_blocks import ToolResultBlock
 from src.utils.abort_controller import AbortError
 
 if TYPE_CHECKING:
@@ -50,7 +50,6 @@ async def run_tool_use(
     tool_use_context: ToolContext,
 ) -> AsyncGenerator[MessageUpdateLazy, None]:
     from src.tool_system.build_tool import find_tool_by_name
-    from src.tool_system.registry import get_all_base_tools
 
     tool_name = tool_use.name
     tool = find_tool_by_name(tool_use_context.options.tools, tool_name)
@@ -193,6 +192,10 @@ async def _check_permissions_and_call_tool(
                 hook_permission_result = result.get("hookPermissionResult") if isinstance(result, dict) else getattr(result, "hook_permission_result", None)
             elif result_type == "hookUpdatedInput":
                 processed_input = result.get("updatedInput") if isinstance(result, dict) else getattr(result, "updated_input", processed_input)
+            elif result_type == "additionalContext":
+                msg = result.get("message") if isinstance(result, dict) else getattr(result, "message", None)
+                if msg:
+                    resulting_messages.append(msg if isinstance(msg, MessageUpdateLazy) else MessageUpdateLazy(message=msg.get("message") if isinstance(msg, dict) else msg))
             elif result_type == "preventContinuation":
                 should_prevent_continuation = True
             elif result_type == "stopReason":
@@ -236,35 +239,25 @@ async def _check_permissions_and_call_tool(
         ))
         return resulting_messages
 
-    updated_input = permission_decision.get("updatedInput")
+    updated_input = (
+        permission_decision.get("updatedInput")
+        or permission_decision.get("updated_input")
+        or permission_decision.get("input")
+    )
     if updated_input is not None:
         processed_input = updated_input
 
     start_time = time.monotonic()
 
     try:
-        from src.tool_system.context import ToolContext as TC
-
         call_context = tool_use_context
         call_context.tool_use_id = tool_use_id
         call_context.user_modified = permission_decision.get("userModified", False)
 
         result = await _call_tool(tool, processed_input, call_context)
 
-        duration_ms = int((time.monotonic() - start_time) * 1000)
-
-        tool_result_block = tool.map_result_to_api(result.data, tool_use_id)
-
-        resulting_messages.append(MessageUpdateLazy(
-            message=create_user_message(
-                content=[tool_result_block],
-                toolUseResult=result.data if not tool_use_context.agent_id else None,
-            ),
-            context_modifier=ContextModifier(
-                tool_use_id=tool_use_id,
-                modify_context=result.context_modifier,
-            ) if result.context_modifier else None,
-        ))
+        tool_response_data = result.data
+        post_hook_messages: list[MessageUpdateLazy] = []
 
         try:
             from src.services.tool_execution.tool_hooks import run_post_tool_use_hooks
@@ -274,14 +267,34 @@ async def _check_permissions_and_call_tool(
                 tool,
                 tool_use_id,
                 processed_input,
-                result.data,
+                tool_response_data,
             ):
-                if isinstance(hook_result, dict) and "message" in hook_result:
-                    resulting_messages.append(MessageUpdateLazy(message=hook_result["message"]))
+                if isinstance(hook_result, dict) and "updatedMCPToolOutput" in hook_result:
+                    tool_response_data = hook_result["updatedMCPToolOutput"]
+                elif isinstance(hook_result, dict) and "message" in hook_result:
+                    post_hook_messages.append(MessageUpdateLazy(message=hook_result["message"]))
                 elif isinstance(hook_result, MessageUpdateLazy):
-                    resulting_messages.append(hook_result)
+                    post_hook_messages.append(hook_result)
         except Exception as e:
             logger.debug("Post-tool hook error: %s", e)
+
+        tool_result_block = _map_tool_result_to_block(
+            tool.map_result_to_api(tool_response_data, tool_use_id),
+            tool_response_data,
+        )
+
+        resulting_messages.append(MessageUpdateLazy(
+            message=create_user_message(
+                content=[tool_result_block],
+                toolUseResult=tool_response_data if not tool_use_context.agent_id else None,
+            ),
+            context_modifier=ContextModifier(
+                tool_use_id=tool_use_id,
+                modify_context=result.context_modifier,
+            ) if result.context_modifier else None,
+        ))
+
+        resulting_messages.extend(post_hook_messages)
 
         if result.new_messages:
             for msg in result.new_messages:
@@ -351,7 +364,6 @@ async def _call_tool(tool: Tool, tool_input: dict[str, Any], context: ToolContex
     from src.tool_system.protocol import ToolResult
 
     call_fn = tool.call
-    import asyncio
     import inspect
 
     if inspect.iscoroutinefunction(call_fn):
@@ -403,6 +415,23 @@ def _format_error(error: Exception) -> str:
     if not msg:
         msg = type(error).__name__
     return f"<tool_use_error>{msg}</tool_use_error>"
+
+
+def _map_tool_result_to_block(api_block: dict[str, Any], raw_output: Any) -> ToolResultBlock:
+    content = api_block.get("content", "")
+    if not isinstance(content, str):
+        content = json.dumps(content, ensure_ascii=False)
+
+    metadata: dict[str, Any] = {}
+    if isinstance(raw_output, dict):
+        metadata["tool_output"] = raw_output
+
+    return ToolResultBlock(
+        tool_use_id=str(api_block.get("tool_use_id", "")),
+        content=content,
+        is_error=bool(api_block.get("is_error", False)),
+        metadata=metadata,
+    )
 
 
 def classify_tool_error(error: Exception) -> str:

@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
 import os
-import sys
 import time
-from dataclasses import dataclass, field
-from typing import Any, AsyncGenerator, Callable
-from uuid import uuid4
+from dataclasses import dataclass
+from typing import Any, AsyncGenerator
 
 from ..types.messages import (
     AssistantMessage,
@@ -17,19 +13,20 @@ from ..types.messages import (
     UserMessage,
 )
 from ..types.content_blocks import TextBlock, ToolResultBlock, ToolUseBlock
-from ..tool_system.build_tool import Tool, Tools, find_tool_by_name
+from ..tool_system.build_tool import Tools
 from ..tool_system.context import ToolContext
-from ..tool_system.protocol import ToolCall, ToolResult
 from ..tool_system.registry import ToolRegistry
 from ..utils.abort_controller import AbortController
-from ..providers.base import BaseProvider, ChatResponse
+from ..providers.base import BaseProvider
 
-from .config import QueryConfig, build_query_config
-from .transitions import QueryState, Terminal, Transition
+from .transitions import QueryState, Transition
 from ..services.compact.pipeline import (
-    CompressionPipeline,
     PipelineConfig,
     run_compression_pipeline,
+)
+from ..services.tool_execution.orchestrator import (
+    partition_tool_calls,
+    run_tools as run_tool_execution_service,
 )
 from ..token_estimation import rough_token_count_estimation_for_messages
 
@@ -281,157 +278,16 @@ async def _call_model_sync(
     return [assistant_msg], tool_use_blocks
 
 
-# Max tools to run in parallel (TS default: 10, configurable via env var)
-MAX_TOOL_USE_CONCURRENCY = int(
-    os.environ.get("SOCRATES_MAX_TOOL_USE_CONCURRENCY", "10")
-)
-
-
-@dataclass
-class _ToolBatch:
-    """A batch of tool_use blocks with the same concurrency classification."""
-    is_concurrent_safe: bool
-    blocks: list[ToolUseBlock]
-
-
-def _partition_tool_calls(
-    tool_use_blocks: list[ToolUseBlock],
-    tools: Tools,
-) -> list[_ToolBatch]:
-    """Partition tool calls into batches per TS partitionToolCalls().
-
-    Consecutive ConcurrencySafe tools are grouped for parallel execution.
-    Non-safe tools each get their own exclusive batch.
-
-    (not a static lookup), so e.g. read-only Bash commands can be parallel.
-    """
-    batches: list[_ToolBatch] = []
-    for block in tool_use_blocks:
-        tool = find_tool_by_name(tools, block.name)
-        try:
-            is_safe = bool(tool.is_concurrency_safe(block.input)) if tool else False
-        except Exception:
-            is_safe = False
-        if batches and is_safe and batches[-1].is_concurrent_safe:
-            batches[-1].blocks.append(block)
-        else:
-            batches.append(_ToolBatch(is_concurrent_safe=is_safe, blocks=[block]))
-    return batches
-
-
-def _dispatch_single_tool(
-    block: ToolUseBlock,
-    tool_registry: ToolRegistry,
-    tool_use_context: ToolContext,
-    tools: Tools | None = None,
-) -> UserMessage:
-    """Dispatch a single tool and return the UserMessage result.
-
-    to convert structured output (e.g. file_unchanged) to API-ready text.
-    """
-    try:
-        call = ToolCall(
-            name=block.name,
-            input=block.input,
-            tool_use_id=block.id,
-        )
-        result = tool_registry.dispatch(call, tool_use_context)
-
-        tool = find_tool_by_name(tools, block.name) if tools else None
-        if tool is not None:
-            api_block = tool.map_result_to_api(result.output, block.id)
-            content_str = api_block.get("content", "")
-            if not isinstance(content_str, str):
-                content_str = json.dumps(content_str, ensure_ascii=False)
-        elif isinstance(result.output, str):
-            content_str = result.output
-        elif isinstance(result.output, dict):
-            content_str = json.dumps(result.output, ensure_ascii=False)
-        else:
-            content_str = str(result.output)
-
-        # Preserve the original tool output as in-process metadata so the
-        # REPL can render rich previews (Edit's structuredPatch is the
-        # current consumer). map_result_to_api strips it for the wire.
-        metadata: dict[str, Any] = {}
-        if isinstance(result.output, dict):
-            metadata["tool_output"] = result.output
-        return UserMessage(
-            content=[
-                ToolResultBlock(
-                    tool_use_id=block.id,
-                    content=content_str,
-                    is_error=result.is_error,
-                    metadata=metadata,
-                )
-            ],
-        )
-    except Exception as e:
-        error_str = f"Error: {e}"
-        return UserMessage(
-            content=[
-                ToolResultBlock(
-                    tool_use_id=block.id,
-                    content=error_str,
-                    is_error=True,
-                )
-            ],
-        )
-
-
-async def _run_tools_partitioned(
-    tool_use_blocks: list[ToolUseBlock],
-    tool_registry: ToolRegistry,
-    tool_use_context: ToolContext,
-    tools: Tools,
-) -> list[UserMessage]:
-    """
-
-    ConcurrencySafe tools (Read, Grep, Glob, etc.) run in parallel up to
-    MAX_TOOL_USE_CONCURRENCY.  Non-safe tools (Bash, Edit, Write) run
-    exclusively one at a time.
-    """
-    batches = _partition_tool_calls(tool_use_blocks, tools)
-    all_results: list[UserMessage] = []
-
-    for batch in batches:
-        if batch.is_concurrent_safe and len(batch.blocks) > 1:
-            coros = [
-                asyncio.to_thread(
-                    _dispatch_single_tool, block, tool_registry, tool_use_context, tools,
-                )
-                for block in batch.blocks[:MAX_TOOL_USE_CONCURRENCY]
-            ]
-            batch_results = await asyncio.gather(*coros)
-            all_results.extend(batch_results)
-            if len(batch.blocks) > MAX_TOOL_USE_CONCURRENCY:
-                overflow = [
-                    asyncio.to_thread(
-                        _dispatch_single_tool, block, tool_registry, tool_use_context, tools,
-                    )
-                    for block in batch.blocks[MAX_TOOL_USE_CONCURRENCY:]
-                ]
-                all_results.extend(await asyncio.gather(*overflow))
-        else:
-            for block in batch.blocks:
-                result = await asyncio.to_thread(
-                    _dispatch_single_tool, block, tool_registry, tool_use_context, tools,
-                )
-                all_results.append(result)
-
-    return all_results
-
-
-def _run_tools_sync(
-    tool_use_blocks: list[ToolUseBlock],
-    tool_registry: ToolRegistry,
-    tool_use_context: ToolContext,
-) -> list[UserMessage]:
-    """Run tool calls sequentially."""
-    results: list[UserMessage] = []
-    for block in tool_use_blocks:
-        results.append(_dispatch_single_tool(block, tool_registry, tool_use_context))
-    return results
+def _has_tool_result_content(message: Message) -> bool:
+    content = getattr(message, "content", None)
+    if not isinstance(content, list):
+        return False
+    for block in content:
+        if isinstance(block, ToolResultBlock):
+            return True
+        if isinstance(block, dict) and block.get("type") == "tool_result":
+            return True
+    return False
 
 
 async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, None]:
@@ -441,8 +297,6 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
         tool_use_context=params.tool_use_context,
         max_output_tokens_override=params.max_output_tokens_override,
     )
-    config = build_query_config()
-    terminal: Terminal | None = None
 
     while True:
         messages = state.messages
@@ -453,6 +307,7 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
                 state.transition.reason if state.transition else "initial",
             )
         tool_use_context = state.tool_use_context
+        tool_use_context.options.tools = params.tools
         max_output_tokens_recovery_count = state.max_output_tokens_recovery_count
         has_attempted_reactive_compact = state.has_attempted_reactive_compact
         max_output_tokens_override = state.max_output_tokens_override
@@ -585,9 +440,9 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
 
         if _diag:
             _tools_t0 = time.monotonic()
-            _batches = _partition_tool_calls(tool_use_blocks, params.tools)
+            _batches = partition_tool_calls(tool_use_blocks, tool_use_context)
             _batch_desc = ", ".join(
-                f"[{'parallel' if b.is_concurrent_safe else 'exclusive'}: {[bl.name for bl in b.blocks]}]"
+                f"[{'parallel' if b.is_concurrency_safe else 'exclusive'}: {[bl.name for bl in b.blocks]}]"
                 for b in _batches
             )
             logger.warning(
@@ -595,12 +450,25 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
                 len(tool_use_blocks), len(_batches), _batch_desc,
             )
 
-        tool_results = await _run_tools_partitioned(
+        tool_execution_messages: list[Message] = []
+        updated_tool_use_context = tool_use_context
+
+        async for update in run_tool_execution_service(
             tool_use_blocks,
-            params.tool_registry,
+            assistant_messages,
+            None,
             tool_use_context,
-            params.tools,
-        )
+        ):
+            if update.new_context is not None:
+                updated_tool_use_context = update.new_context
+            if update.message is not None:
+                tool_execution_messages.append(update.message)
+
+        tool_use_context = updated_tool_use_context
+        tool_results = [
+            msg for msg in tool_execution_messages
+            if isinstance(msg, UserMessage) and _has_tool_result_content(msg)
+        ]
 
         if _diag:
             logger.warning(
@@ -614,7 +482,7 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
                             clen = len(b.content) if isinstance(b.content, str) else len(str(b.content))
                             logger.warning("[DIAG]   result: tool_use_id=%s  is_error=%s  content_len=%d", getattr(b, 'tool_use_id', '?'), getattr(b, 'is_error', False), clen)
 
-        for result_msg in tool_results:
+        for result_msg in tool_execution_messages:
             yield result_msg
 
         if params.abort_controller.signal.aborted:
