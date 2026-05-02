@@ -2,7 +2,7 @@
 
 Only the small slice of state needed to gate tool availability is modeled for
 now: whether the current process is running an interactive REPL session or
-a headless/SDK-style invocation. The default is ``isInteractive = False`` which
+an SDK-style non-interactive invocation. The default is ``isInteractive = False`` which
 """
 
 from __future__ import annotations

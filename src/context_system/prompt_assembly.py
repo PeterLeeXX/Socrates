@@ -313,7 +313,7 @@ def build_full_system_prompt(
     50. Skill listing - available skills
     60. Output style - additional configured style overlay
     70. Plan mode - plan mode instructions
-    80. Non-interactive mode - headless instructions
+    80. Non-interactive mode instructions
     90. Tool restrictions - availability constraints
     """
     if custom_system_prompt:
@@ -835,7 +835,7 @@ def _build_plan_mode_section(use_cache: bool) -> SystemPromptSection | None:
 
 _NON_INTERACTIVE_PROMPT = (
     "# Non-Interactive Mode\n"
-    "You are running in non-interactive (SDK/headless) mode.\n"
+    "You are running in non-interactive (SDK/non-interactive) mode.\n"
     "- Do not ask the user for input or confirmation\n"
     "- Make reasonable decisions autonomously\n"
     "- Complete the task to the best of your ability\n"

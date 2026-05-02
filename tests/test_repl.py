@@ -14,7 +14,7 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 
 from src.repl import SocratesREPL
-from src.agent import Session, Conversation
+from src.agent import Conversation
 from src.providers.base import ChatMessage, ChatResponse
 
 
@@ -47,7 +47,7 @@ class TestREPL(unittest.TestCase):
     def test_repl_initialization(self):
         """Test REPL initialization."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session:
+            with patch('src.repl.core.SessionStorage') as mock_session:
                 mock_session.return_value = Mock()
 
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
@@ -63,7 +63,7 @@ class TestREPL(unittest.TestCase):
     def test_repl_initialization_with_stream_enabled(self):
         """Test REPL can start with stream mode enabled."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session:
+            with patch('src.repl.core.SessionStorage') as mock_session:
                 mock_session.return_value = Mock()
 
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
@@ -76,7 +76,7 @@ class TestREPL(unittest.TestCase):
 
     def test_startup_header_contains_logo_and_metadata(self):
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -105,7 +105,7 @@ class TestREPL(unittest.TestCase):
     def test_handle_command_exit(self):
         """Test /exit command."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -119,7 +119,7 @@ class TestREPL(unittest.TestCase):
     def test_handle_command_clear(self):
         """Test /clear command."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session:
+            with patch('src.repl.core.SessionStorage') as mock_session:
                 mock_session_instance = Mock()
                 mock_session_instance.conversation = Mock()
                 mock_session.return_value = mock_session_instance
@@ -132,12 +132,12 @@ class TestREPL(unittest.TestCase):
                     repl = SocratesREPL(provider_name="glm")
                     repl.handle_command("/clear")
 
-                    mock_session_instance.conversation.clear.assert_called_once()
+                    self.assertEqual(len(repl.session.conversation.messages), 0)
 
     def test_handle_command_stream_toggle(self):
         """Test /stream command toggles stream mode safely."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -155,7 +155,7 @@ class TestREPL(unittest.TestCase):
     def test_handle_command_render_last_renders_markdown(self):
         """Test /render-last re-renders the last assistant response."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session_factory:
+            with patch('src.repl.core.SessionStorage') as mock_session_factory:
                 mock_session = Mock()
                 mock_session.conversation = Conversation()
                 mock_session.conversation.add_assistant_message("## Hello\n\n- item")
@@ -167,6 +167,7 @@ class TestREPL(unittest.TestCase):
                     mock_provider_class.return_value = mock_provider
 
                     repl = SocratesREPL(provider_name="glm")
+                    repl.session.conversation.add_assistant_message("## Hello\n\n- item")
                     repl.console.print = Mock()
                     repl.handle_command("/render-last")
 
@@ -178,7 +179,7 @@ class TestREPL(unittest.TestCase):
     def test_handle_command_render_last_without_message(self):
         """Test /render-last handles empty history gracefully."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session_factory:
+            with patch('src.repl.core.SessionStorage') as mock_session_factory:
                 mock_session = Mock()
                 mock_session.conversation = Conversation()
                 mock_session_factory.return_value = mock_session
@@ -200,7 +201,7 @@ class TestREPL(unittest.TestCase):
     def test_chat_uses_true_api_stream_for_simple_prompt(self):
         """Simple prompts should use provider.chat_stream when stream mode is enabled."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session_factory:
+            with patch('src.repl.core.SessionStorage') as mock_session_factory:
                 mock_session = Mock()
                 mock_session.conversation = Conversation()
                 mock_session_factory.return_value = mock_session
@@ -223,9 +224,9 @@ class TestREPL(unittest.TestCase):
                         args and isinstance(args[0], Markdown)
                         for args, _kwargs in repl.console.print.call_args_list
                     ))
-                    self.assertEqual(len(mock_session.conversation.messages), 2)
-                    self.assertEqual(mock_session.conversation.messages[1].role, "assistant")
-                    last_content = mock_session.conversation.messages[1].content
+                    self.assertEqual(len(repl.session.conversation.messages), 2)
+                    self.assertEqual(repl.session.conversation.messages[1].role, "assistant")
+                    last_content = repl.session.conversation.messages[1].content
                     if isinstance(last_content, list):
                         self.assertEqual(last_content[0].text, "hello")
                     else:
@@ -234,7 +235,7 @@ class TestREPL(unittest.TestCase):
     def test_chat_uses_query_engine_for_code_task(self):
         """Code-like prompts use the new QueryEngine path."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session_factory:
+            with patch('src.repl.core.SessionStorage') as mock_session_factory:
                 mock_session = Mock()
                 mock_session.conversation = Conversation()
                 mock_session_factory.return_value = mock_session
@@ -261,7 +262,7 @@ class TestREPL(unittest.TestCase):
     def test_chat_uses_query_engine_on_stream_init_failure(self):
         """If real streaming fails, fall back to QueryEngine."""
         with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session_factory:
+            with patch('src.repl.core.SessionStorage') as mock_session_factory:
                 mock_session = Mock()
                 mock_session.conversation = Conversation()
                 mock_session_factory.return_value = mock_session
@@ -299,7 +300,7 @@ class TestREPL(unittest.TestCase):
         )
         with patch.dict("os.environ", {"SOCRATES_SKILLS_DIR": str(skills_dir)}):
             with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-                with patch('src.repl.core.Session.create'):
+                with patch('src.repl.core.SessionStorage'):
                     with patch('src.providers.get_provider_class') as mock_provider_class:
                         mock_provider = Mock()
                         mock_provider.model = "glm-4.5"
@@ -326,7 +327,7 @@ class TestREPL(unittest.TestCase):
         )
         with patch.dict("os.environ", {"SOCRATES_SKILLS_DIR": str(skills_dir)}):
             with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-                with patch('src.repl.core.Session.create'):
+                with patch('src.repl.core.SessionStorage'):
                     with patch('src.providers.get_provider_class') as mock_provider_class:
                         mock_provider = Mock()
                         mock_provider.model = "glm-4.5"
@@ -354,7 +355,7 @@ class TestREPL(unittest.TestCase):
         )
         with patch.dict("os.environ", {"SOCRATES_SKILLS_DIR": str(skills_dir)}):
             with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-                with patch('src.repl.core.Session.create'):
+                with patch('src.repl.core.SessionStorage'):
                     with patch('src.providers.get_provider_class') as mock_provider_class:
                         mock_provider = Mock()
                         mock_provider.model = "glm-4.5"
@@ -366,72 +367,46 @@ class TestREPL(unittest.TestCase):
                         args, _kwargs = repl.chat.call_args
                         self.assertIn("Hello bob", args[0])
 
-    def test_save_session(self):
-        """Test session saving."""
-        with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session:
-                mock_session_instance = Mock()
-                mock_session_instance.session_id = "test_session_123"
-                mock_session.return_value = mock_session_instance
-
-                with patch('src.providers.get_provider_class') as mock_provider_class:
-                    mock_provider = Mock()
-                    mock_provider.model = "glm-4.5"
-                    mock_provider_class.return_value = mock_provider
-
-                    repl = SocratesREPL(provider_name="glm")
-                    repl.save_session()
-
-                    mock_session_instance.save.assert_called_once()
-
     def test_load_session(self):
-        """Test session loading."""
-        with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session:
-                mock_session_instance = Mock()
-                mock_session_instance.session_id = "current_session"
-                mock_session.return_value = mock_session_instance
+        """Test session loading from SessionStorage."""
+        from src.services.session_storage import SessionStorage
+        from src.types.messages import create_user_message
 
+        with tempfile.TemporaryDirectory() as td:
+            sessions_dir = Path(td)
+            storage = SessionStorage(session_id="loaded_session_123", sessions_dir=sessions_dir)
+            storage.init_metadata(model="glm-4.5", cwd=str(Path.cwd()), title="Loaded")
+            storage.write_message(create_user_message("hello"))
+            storage.flush()
+
+            with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
                 with patch('src.providers.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
-                    mock_provider_class.return_value = mock_provider
+                    mock_provider_class.return_value = Mock(return_value=mock_provider)
 
-                    with patch('src.repl.core.Session.load') as mock_load:
-                        loaded_session = Mock()
-                        loaded_session.session_id = "loaded_session_123"
-                        loaded_session.provider = "glm"
-                        loaded_session.model = "glm-4.5"
-                        loaded_session.conversation = Mock()
-                        loaded_session.conversation.messages = []
-                        mock_load.return_value = loaded_session
+                    repl = SocratesREPL(provider_name="glm", sessions_dir=sessions_dir)
+                    repl.load_session("loaded_session_123")
 
-                        repl = SocratesREPL(provider_name="glm")
-                        repl.load_session("loaded_session_123")
-
-                        self.assertEqual(repl.session.session_id, "loaded_session_123")
+                    self.assertEqual(repl.session.session_id, "loaded_session_123")
+                    self.assertEqual(len(repl._engine_messages), 1)
 
     def test_load_nonexistent_session(self):
         """Test loading a session that doesn't exist."""
-        with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
-            with patch('src.repl.core.Session.create') as mock_session:
-                mock_session_instance = Mock()
-                mock_session_instance.session_id = "current_session"
-                mock_session.return_value = mock_session_instance
-
+        with tempfile.TemporaryDirectory() as td:
+            with patch('src.config.get_config_path', return_value=self.config_dir / "config.json"):
                 with patch('src.providers.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
-                    mock_provider_class.return_value = mock_provider
+                    mock_provider_class.return_value = Mock(return_value=mock_provider)
 
-                    with patch('src.repl.core.Session.load', return_value=None):
-                        repl = SocratesREPL(provider_name="glm")
-                        original_session = repl.session
+                    repl = SocratesREPL(provider_name="glm", sessions_dir=Path(td))
+                    original_session = repl.session
 
-                        repl.load_session("nonexistent")
+                    repl.load_session("nonexistent")
 
-                        # Session should not change
-                        self.assertEqual(repl.session, original_session)
+                    # Session should not change
+                    self.assertEqual(repl.session, original_session)
 
     def test_permission_prompt_is_serialized(self):
         """Concurrent permission checks should not open overlapping prompts."""
@@ -441,7 +416,7 @@ class TestREPL(unittest.TestCase):
             "default_model": "glm-4.5",
         }), patch('src.repl.core.PromptSession') as mock_prompt_session:
             mock_prompt_session.return_value = Mock(prompt=Mock(return_value=""))
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -489,7 +464,7 @@ class TestREPL(unittest.TestCase):
             "default_model": "glm-4.5",
         }), patch('src.repl.core.PromptSession') as mock_prompt_session:
             mock_prompt_session.return_value = Mock(prompt=Mock(return_value=""))
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -529,7 +504,7 @@ class TestREPL(unittest.TestCase):
             "default_model": "glm-4.5",
         }), patch('src.repl.core.PromptSession') as mock_prompt_session:
             mock_prompt_session.return_value = Mock(prompt=Mock(return_value=""))
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -569,7 +544,7 @@ class TestREPL(unittest.TestCase):
             "default_model": "glm-4.5",
         }), patch('src.repl.core.PromptSession') as mock_prompt_session:
             mock_prompt_session.return_value = Mock(prompt=Mock(return_value=""))
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -612,7 +587,7 @@ class TestREPL(unittest.TestCase):
             "default_model": "glm-4.5",
         }), patch('src.repl.core.PromptSession') as mock_prompt_session:
             mock_prompt_session.return_value = Mock(prompt=Mock(return_value=""))
-            with patch('src.repl.core.Session.create'):
+            with patch('src.repl.core.SessionStorage'):
                 with patch('src.repl.core.get_provider_class') as mock_provider_class:
                     mock_provider = Mock()
                     mock_provider.model = "glm-4.5"
@@ -698,37 +673,6 @@ class TestConversation(unittest.TestCase):
         conv2 = Conversation.from_dict(data)
         self.assertEqual(len(conv2.messages), 2)
         self.assertEqual(conv2.messages[0].content, "Test")
-
-
-class TestSession(unittest.TestCase):
-    """Test session management."""
-
-    def test_create_session(self):
-        """Test session creation."""
-        session = Session.create("glm", "glm-4.5")
-
-        self.assertIsNotNone(session.session_id)
-        self.assertEqual(session.provider, "glm")
-        self.assertEqual(session.model, "glm-4.5")
-        self.assertEqual(len(session.conversation.messages), 0)
-
-    def test_session_save_load(self):
-        """Test session save and load."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            session_dir = Path(temp_dir) / ".socrates" / "sessions"
-
-            with patch('src.agent.session.Path.home', return_value=Path(temp_dir)):
-                # Create and save
-                session = Session.create("glm", "glm-4.5")
-                session.conversation.add_message("user", "Test message")
-                session.save()
-
-                # Load
-                loaded = Session.load(session.session_id)
-                self.assertIsNotNone(loaded)
-                self.assertEqual(loaded.session_id, session.session_id)
-                self.assertEqual(len(loaded.conversation.messages), 1)
-                self.assertEqual(loaded.conversation.messages[0].content, "Test message")
 
 
 if __name__ == '__main__':

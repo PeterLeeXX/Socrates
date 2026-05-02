@@ -19,6 +19,8 @@ fake event, which is exactly the contract prompt_toolkit itself invokes.
 from __future__ import annotations
 
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from prompt_toolkit.buffer import Buffer
@@ -54,11 +56,12 @@ def _make_repl():
     with patch(
         "src.repl.core.get_provider_config",
         return_value={"api_key": "x", "default_model": "glm-4.5"},
-    ), patch("src.repl.core.Session.create"), patch(
+    ), patch(
         "src.repl.core.get_provider_class"
     ) as mock_provider_class:
-        mock_provider_class.return_value = mock_provider
-        return SocratesREPL(provider_name="glm")
+        mock_provider_class.return_value = Mock(return_value=mock_provider)
+        with tempfile.TemporaryDirectory() as td:
+            return SocratesREPL(provider_name="glm", sessions_dir=Path(td))
 
 
 def _find_binding(bindings, *keys):

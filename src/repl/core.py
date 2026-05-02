@@ -192,7 +192,7 @@ from contextlib import contextmanager, nullcontext
 from collections import deque
 from typing import Any
 
-from src.agent import Session
+from src.agent import Conversation
 from src.config import get_provider_config
 from src.outputStyles import resolve_output_style
 from src.providers import get_provider_class
@@ -205,7 +205,10 @@ from src.tool_system.protocol import ToolCall
 from src.tool_system.agent_loop import ToolEvent, run_agent_loop, summarize_tool_result, summarize_tool_use
 from src.query.engine import QueryEngine, QueryEngineConfig
 from src.query.query import StreamEvent
-from src.types.messages import AssistantMessage, SystemMessage, UserMessage
+from src.services.session_resume import resume_session
+from src.services.session_storage import SessionStorage
+from src.services.session_title import auto_title_from_message
+from src.types.messages import AssistantMessage, Message, SystemMessage, UserMessage
 from src.types.content_blocks import TextBlock, ToolUseBlock, ToolResultBlock
 
 # New command system imports
@@ -280,6 +283,16 @@ class PermissionChoiceState:
         self.selected_index = min(len(self.labels) - 1, self.selected_index + 1)
 
 
+@dataclass
+class RuntimeSession:
+    """In-memory session state backed by SessionStorage."""
+
+    session_id: str
+    provider: str
+    model: str
+    conversation: Conversation
+
+
 class SocratesREPL:
     """Interactive REPL for Socrates."""
 
@@ -290,6 +303,8 @@ class SocratesREPL:
         *,
         permission_mode: str = "default",
         is_bypass_permissions_mode_available: bool = False,
+        sessions_dir: Path | None = None,
+        resume_session_id: str | None = None,
     ):
         # Mark this process as running an interactive session BEFORE we build
         # the tool registry. Tools like TaskCreate / TaskUpdate / TodoWrite
@@ -325,14 +340,30 @@ class SocratesREPL:
             model=config.get("default_model")
         )
 
-        # Create session
-        self.session = Session.create(
-            provider_name,
-            self.provider.model
+        # Create storage-backed session. Conversation remains the live in-memory
+        # view; SessionStorage is the source of durable transcripts.
+        self.session_storage = SessionStorage(
+            session_id=resume_session_id,
+            sessions_dir=sessions_dir,
         )
+        self.session = RuntimeSession(
+            session_id=self.session_storage.session_id,
+            provider=provider_name,
+            model=self.provider.model,
+            conversation=Conversation(),
+        )
+        self.session_id = self.session.session_id
+        self._engine_messages: list[Any] = []
+        if resume_session_id:
+            self._resume_runtime_session(resume_session_id)
+        else:
+            self.session_storage.init_metadata(
+                model=self.provider.model,
+                cwd=str(Path.cwd()),
+                title="",
+            )
 
         self.tool_registry = build_default_registry(provider=self.provider)
-        self._engine_messages: list[Any] = []
         from src.permissions.types import ToolPermissionContext
 
         self.tool_context = ToolContext(
@@ -400,7 +431,6 @@ class SocratesREPL:
             "/help",
             "/exit",
             "/clear",
-            "/save",
             "/load",
             "/stream",
             "/render-last",
@@ -907,6 +937,65 @@ class SocratesREPL:
                     self._built_in_commands.append(cmd_name)
         except Exception:
             pass
+
+    def _persist_message(self, message: Message) -> None:
+        """Append one message to the durable transcript."""
+        self.session_storage.write_message(message)
+
+    def _append_conversation_message(self, message: Message) -> None:
+        if len(self.session.conversation.messages) >= self.session.conversation.max_history:
+            self.session.conversation.messages.pop(0)
+        self.session.conversation.messages.append(message)
+
+    def _flush_session_storage(self) -> None:
+        try:
+            self.session_storage.flush()
+        except Exception as e:
+            self.console.print(f"[yellow]Warning: failed to persist session: {e}[/yellow]")
+
+    def _record_user_input(self, text: str) -> None:
+        msg = UserMessage(content=text)
+        self._append_conversation_message(msg)
+        self._persist_message(msg)
+
+        meta = self.session_storage.get_metadata()
+        if meta is not None and not meta.title:
+            self.session_storage.update_metadata(title=auto_title_from_message(text))
+
+    def _record_assistant_message(self, msg: AssistantMessage) -> None:
+        self._append_conversation_message(msg)
+        self._persist_message(msg)
+
+    def _record_query_user_message(self, msg: UserMessage) -> None:
+        self._append_conversation_message(msg)
+        self._persist_message(msg)
+
+    def _resume_runtime_session(self, session_id: str) -> bool:
+        result = resume_session(
+            session_id,
+            sessions_dir=self.session_storage.sessions_dir,
+            current_cwd=str(Path.cwd()),
+        )
+        if not result.success:
+            return False
+
+        provider = self.provider_name
+        model = self.provider.model
+        if result.metadata is not None and result.metadata.model:
+            model = result.metadata.model
+
+        self.session = RuntimeSession(
+            session_id=session_id,
+            provider=provider,
+            model=model,
+            conversation=Conversation(),
+        )
+        self.session.conversation.messages = list(result.messages)
+        self.session_id = session_id
+        self._engine_messages = list(result.messages)
+        if hasattr(self, "command_context"):
+            self.command_context.conversation = self.session.conversation
+        return True
 
     def _try_execute_new_command(self, command: str, args: str) -> tuple[bool, str | None]:
         """Try to execute a command using the new command system (sync path for LocalCommand only).
@@ -1655,14 +1744,14 @@ class SocratesREPL:
         model_label = self.provider.model or "Unknown model"
 
         mascot_ascii = "\n".join([
-            "                /🎀 フ フ",
+            "                ╱@  フ フ",
             "               │ 　_　_│ ",
-            "             ／` ミ＿xノ",
-            "            /　　　　 |",
-            "           /　 \　　 ﾉ",
-            "       /￣│　　|　|　|",
-            "      (二)\＿＿\＿)__)",
-            "       \二)",
+            "              ██ ミ＿xノ",
+            "            ███　　　 |",
+            "           ████╲　　 ﾉ",
+            "       ╱██│███ |　|　|",
+            "      (██)╲▁▁ ╲▁❫▁❫",
+            "       ╲██)",
         ])
 
         if Panel is None or Group is None or Align is None or Table is None or Text is None or Columns is None:
@@ -1880,9 +1969,6 @@ class SocratesREPL:
             self._engine_messages = []
             self.console.print("[green]Conversation cleared.[/green]")
 
-        elif cmd == '/save':
-            self.save_session()
-
         elif cmd == '/stream' or cmd.startswith('/stream '):
             parts = raw.split(maxsplit=1)
             if len(parts) == 1:
@@ -2032,7 +2118,6 @@ class SocratesREPL:
 - `/help` - Show this help message
 - `/exit` - Exit the REPL
 - `/clear` - Clear conversation history
-- `/save` - Save current session
 - `/load <session-id>` - Load a previous session
 - `/stream [on|off|toggle]` - Toggle live response rendering
 - `/render-last` - Re-render the last assistant reply as Markdown
@@ -2173,7 +2258,7 @@ class SocratesREPL:
             return None
 
         full_response = "".join(streamed_chunks)
-        self.session.conversation.add_assistant_message(full_response)
+        self._record_assistant_message(AssistantMessage(content=full_response))
         return full_response
 
     def _get_last_assistant_text(self) -> str | None:
@@ -2244,7 +2329,7 @@ class SocratesREPL:
                     f"[dim]  - Invoking agent @{att['agent_type']}[/dim]"
                 )
 
-        self.session.conversation.add_user_message(user_input)
+        self._record_user_input(user_input)
 
         try:
             self.console.print("\n[bold]Assistant[/bold]")
@@ -2297,6 +2382,7 @@ class SocratesREPL:
                             self._active_live_status = None
                 if direct_response is not None:
                     self.console.print("\n")
+                    self._flush_session_storage()
                     return
 
             from src.outputStyles import resolve_output_style
@@ -2365,7 +2451,7 @@ class SocratesREPL:
                         continue
 
                     if isinstance(msg, AssistantMessage):
-                        self.session.conversation.add_assistant_message(msg.content)
+                        self._record_assistant_message(msg)
                         usage = getattr(msg, "usage", None)
                         if isinstance(usage, dict):
                             self._stats_input_tokens += int(
@@ -2432,6 +2518,7 @@ class SocratesREPL:
                         continue
 
                     if isinstance(msg, UserMessage):
+                        self._record_query_user_message(msg)
                         content = msg.content
                         if isinstance(content, list):
                             for block in content:
@@ -2515,13 +2602,16 @@ class SocratesREPL:
                     _engine_status_ref.append(status)
                     self._active_live_status = status
                     try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
+                        try:
+                            loop = asyncio.get_running_loop()
+                        except RuntimeError:
+                            loop = None
+                        if loop is not None and loop.is_running():
                             import concurrent.futures
                             with concurrent.futures.ThreadPoolExecutor() as pool:
                                 response_text, last_text_was_printed = pool.submit(lambda: asyncio.run(_run_query())).result()
                         else:
-                            response_text, last_text_was_printed = loop.run_until_complete(_run_query())
+                            response_text, last_text_was_printed = asyncio.run(_run_query())
                     except RuntimeError:
                         response_text, last_text_was_printed = asyncio.run(_run_query())
                     finally:
@@ -2531,12 +2621,14 @@ class SocratesREPL:
 
             self._engine_messages = engine.get_messages()
             self._stats_turns += 1
+            self._flush_session_storage()
 
             if not last_text_was_printed and response_text:
                 self.console.print(Markdown(response_text))
             self.console.print()
 
         except Exception as e:
+            self._flush_session_storage()
             error_str = str(e)
 
             if "401" in error_str or "authentication" in error_str.lower():
@@ -2633,34 +2725,30 @@ class SocratesREPL:
 
         self.console.print("[green]> Provider reinitialized. You can continue chatting![/green]\n")
 
-    def save_session(self):
-        """Save current session."""
-        self.session.save()
-        self.console.print(f"[green]Session saved: {self.session.session_id}[/green]")
-
     def load_session(self, session_id: str):
-        """Load a previous session.
+        """Resume a previous storage-backed session.
 
         Args:
             session_id: Session ID to load
         """
-        from src.agent import Session
-
-        loaded_session = Session.load(session_id)
-        if loaded_session is None:
+        previous_storage = self.session_storage
+        self.session_storage = SessionStorage(
+            session_id=session_id,
+            sessions_dir=self.session_storage.sessions_dir,
+        )
+        if not self._resume_runtime_session(session_id):
+            self.session_storage = previous_storage
             self.console.print(f"[red]Session not found: {session_id}[/red]")
             return
 
-        # Replace current session
-        self.session = loaded_session
         self.console.print(f"[green]Session loaded: {session_id}[/green]")
-        self.console.print(f"[dim]Provider: {loaded_session.provider}, Model: {loaded_session.model}[/dim]")
-        self.console.print(f"[dim]Messages: {len(loaded_session.conversation.messages)}[/dim]")
+        self.console.print(f"[dim]Provider: {self.session.provider}, Model: {self.session.model}[/dim]")
+        self.console.print(f"[dim]Messages: {len(self.session.conversation.messages)}[/dim]")
 
         # Show conversation history
-        if loaded_session.conversation.messages:
+        if self.session.conversation.messages:
             self.console.print("\n[bold]Conversation History:[/bold]")
-            for msg in loaded_session.conversation.messages[-5:]:  # Show last 5 messages
+            for msg in self.session.conversation.messages[-5:]:  # Show last 5 messages
                 role_color = "blue" if msg.role == "user" else "green"
-                self.console.print(f"[{role_color}]{msg.role}[/{role_color}]: {msg.content[:100]}...")
+                self.console.print(f"[{role_color}]{msg.role}[/{role_color}]: {str(msg.content)[:100]}...")
 

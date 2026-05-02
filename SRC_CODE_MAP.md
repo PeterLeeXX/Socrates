@@ -6,14 +6,12 @@
 
 - 主同步 agent loop：`src/tool_system/agent_loop.py::run_agent_loop`，负责模型调用、工具分发、多轮循环和最终回复。
 - 交互式入口：`src/repl/core.py::SocratesREPL.chat`。
-- Headless 入口：`src/entrypoints/headless.py::run_headless`。
 - 异步 query pipeline：`src/query/query.py::query`。
 - 子 agent loop：`src/agent/run_agent.py::run_agent`。
 
 ## 2. 当前清理状态
 
 - 已移除迁移期目录和旧入口：`reference_data`、IDE/bridge/remote/direct 相关模块、旧 `src.main`/porting workspace 文件。
-- 已移除第三类兼容逻辑：旧工具名映射、Agent 的 `Task` alias、Skill `.py` 执行路径、模型 alias/deprecated 兼容、API fallback_model、compact 旧函数名、headless `skip_permissions` 字段。
 - 当前 `src` 下共有 `262` 个 Python 文件。
 
 ## 3. 目录树
@@ -39,11 +37,6 @@ src/
 |-- bootstrap/
 |   |-- __init__.py
 |   `-- state.py
-|-- cli_core/
-|   |-- __init__.py
-|   |-- exit.py
-|   |-- ndjson.py
-|   `-- structured_io.py
 |-- command_system/
 |   |-- __init__.py
 |   |-- argument_substitution.py
@@ -68,10 +61,6 @@ src/
 |   |-- prompt_assembly.py
 |   |-- system_prompt_cache.py
 |   `-- workspace_snapshot.py
-|-- entrypoints/
-|   |-- __init__.py
-|   `-- headless.py
-|-- hooks/
 |   |-- __init__.py
 |   |-- config_manager.py
 |   |-- exec_agent_hook.py
@@ -311,7 +300,6 @@ src/
 |-- history.py
 |-- query.py
 |-- replLauncher.py
-|-- session_store.py
 |-- token_estimation.py
 `-- transcript.py
 ```
@@ -323,13 +311,12 @@ src/
 顶层入口与横切基础模块。
 
 - `src/__init__.py`：包版本与顶层初始化。
-- `src/cli.py`：Socrates 命令行主入口，负责参数解析、权限模式解析、REPL/headless 分发。
+- `src/cli.py`: Socrates CLI entry; parses args, resolves permission mode, and starts the REPL.
 - `src/config.py`：全局、项目和本地配置的加载、保存、provider 配置与历史记录。
 - `src/cost_tracker.py`：顶层成本统计入口，实际成本逻辑在 services 中。
 - `src/history.py`：历史记录辅助。
 - `src/query.py`：顶层 query 入口模块。
 - `src/replLauncher.py`：REPL 启动辅助入口。
-- `src/session_store.py`：会话持久化入口。
 - `src/token_estimation.py`：token 粗估算、消息/token 预算相关基础函数。
 - `src/transcript.py`：转录和对话记录辅助。
 
@@ -344,7 +331,6 @@ src/
 - `src/agent/conversation.py`：`conversation` 模块，隶属于 子 agent 定义、Agent 工具提示、子 agent 运行循环与上下文隔离。
 - `src/agent/prompt.py`：`prompt` 模块，隶属于 子 agent 定义、Agent 工具提示、子 agent 运行循环与上下文隔离。
 - `src/agent/run_agent.py`：子 agent 的异步运行循环。
-- `src/agent/session.py`：`session` 模块，隶属于 子 agent 定义、Agent 工具提示、子 agent 运行循环与上下文隔离。
 - `src/agent/subagent_context.py`：`subagent context` 模块，隶属于 子 agent 定义、Agent 工具提示、子 agent 运行循环与上下文隔离。
 
 ### `auth`
@@ -363,15 +349,6 @@ src/
 
 - `src/bootstrap/__init__.py`：初始化 `bootstrap` 包并导出公共 API。
 - `src/bootstrap/state.py`：`state` 模块，隶属于 进程级启动状态。
-
-### `cli_core`
-
-headless/流式 CLI 的结构化输入输出与退出处理。
-
-- `src/cli_core/__init__.py`：初始化 `cli_core` 包并导出公共 API。
-- `src/cli_core/exit.py`：`exit` 模块，隶属于 headless/流式 CLI 的结构化输入输出与退出处理。
-- `src/cli_core/ndjson.py`：`ndjson` 模块，隶属于 headless/流式 CLI 的结构化输入输出与退出处理。
-- `src/cli_core/structured_io.py`：`structured io` 模块，隶属于 headless/流式 CLI 的结构化输入输出与退出处理。
 
 ### `command_system`
 
@@ -408,13 +385,6 @@ compact 消息边界与摘要包装辅助，当前仍服务于运行时 compact 
 - `src/context_system/prompt_assembly.py`：系统提示词各段落构建、缓存和上下文拼装。
 - `src/context_system/system_prompt_cache.py`：`system prompt cache` 模块，隶属于 系统提示词、CLAUDE.md/规则、git/workspace 上下文与 microcompact。
 - `src/context_system/workspace_snapshot.py`：`workspace snapshot` 模块，隶属于 系统提示词、CLAUDE.md/规则、git/workspace 上下文与 microcompact。
-
-### `entrypoints`
-
-非交互式 headless 入口。
-
-- `src/entrypoints/__init__.py`：初始化 `entrypoints` 包并导出公共 API。
-- `src/entrypoints/headless.py`：`headless` 模块，隶属于 非交互式 headless 入口。
 
 ### `hooks`
 
@@ -694,4 +664,3 @@ SKILL.md 技能模型、加载、frontmatter、参数替换和内置技能。
 - `src/utils/git.py`：`git` 模块，隶属于 通用工具：中止控制、deep link、effort、文件状态、git、消息处理、任务开关。
 - `src/utils/messages.py`：`messages` 模块，隶属于 通用工具：中止控制、deep link、effort、文件状态、git、消息处理、任务开关。
 - `src/utils/task_flags.py`：`task flags` 模块，隶属于 通用工具：中止控制、deep link、effort、文件状态、git、消息处理、任务开关。
-

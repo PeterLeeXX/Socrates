@@ -99,6 +99,10 @@ class QueryEngine:
             else:
                 # Per-tool prompts are NOT in the system prompt — they're sent
                 # via the API tools parameter (tool.prompt() → description).
+                # TODO(plan-mode): thread ToolContext.plan_mode into the query
+                # loop so plan mode updates the system prompt and tool policy
+                # on follow-up turns. Today EnterPlanMode/ExitPlanMode toggle
+                # context.plan_mode, but the main loop does not consume it.
                 full_prompt = build_full_system_prompt(
                     cwd=cwd,
                     append_system_prompt=self._config.append_system_prompt,

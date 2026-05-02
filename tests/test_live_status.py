@@ -24,7 +24,7 @@ def test_live_status_starts_and_stops_cleanly() -> None:
     status = LiveStatus("Thinking…", on_cancel=cancelled.set)
     with status:
         # Give the background thread a moment to mount the Application.
-        # In headless pytest the Application may exit immediately for lack
+        # In non-interactive pytest the Application may exit immediately for lack
         # of a TTY; the important property is that __enter__ doesn't hang
         # and __exit__ doesn't deadlock.
         time.sleep(0.05)
@@ -83,7 +83,7 @@ def test_submit_handler_clears_buffer_and_queues_text() -> None:
     with status:
         time.sleep(0.05)
         buf = status._input_buffer
-        # In headless pytest the Application may exit before the buffer
+        # In non-interactive pytest the Application may exit before the buffer
         # is mounted; mount one ourselves so we can still verify the
         # handler logic.
         if buf is None:
@@ -133,7 +133,7 @@ def test_paused_context_releases_and_restores_application() -> None:
             assert status._app is None
             assert status._thread is None
         # After resume, the thread should be re-spawned (and may exit
-        # immediately under headless pytest — that's fine; the important
+        # immediately under non-interactive pytest — that's fine; the important
         # property is that ``paused()`` doesn't leave LiveStatus in a
         # half-torn-down state).
         time.sleep(0.05)

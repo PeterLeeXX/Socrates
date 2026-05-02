@@ -4,7 +4,7 @@
 
 * Interactive REPL sessions expose ``TaskCreate``, ``TaskGet``,
   ``TaskUpdate`` and ``TaskList`` and hide ``TodoWrite``.
-* Non-interactive headless / SDK sessions expose ``TodoWrite`` and hide the
+* Non-interactive SDK sessions expose ``TodoWrite`` and hide the
   TaskV2 tools (unless ``CLAUDE_CODE_ENABLE_TASKS`` is set, mirroring the
 """
 

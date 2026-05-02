@@ -1,7 +1,6 @@
 """Agent module for Socrates."""
 
 from .conversation import Conversation, Message
-from .session import Session
 
 from .agent_definitions import (
     AgentDefinition,
@@ -53,7 +52,6 @@ from .subagent_context import (
 __all__ = [
     "Conversation",
     "Message",
-    "Session",
     # Agent definitions
     "AgentDefinition",
     "AgentSource",

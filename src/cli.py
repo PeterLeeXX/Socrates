@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
 
 from rich.console import Console
 from rich.prompt import Prompt
@@ -27,16 +26,13 @@ def main():
         print(f"socrates version {__version__} (Python)")
         return 0
 
-    # Subcommands are matched BEFORE the main parser to avoid argparse treating
-    # a free-form prompt (e.g. ``socrates -p "hello"``) as an unknown
-    # subcommand. We only need to detect `login` / `config`; everything else
-    # falls through to the main parser.
+    # Subcommands are matched BEFORE the main parser. We only need to detect
+    # `login` / `config`; everything else falls through to the main parser.
     argv = sys.argv[1:]
     for idx, token in enumerate(argv):
         if token.startswith('-'):
             continue
         if token in ('login', 'config'):
-            rest = argv[idx + 1:]
             if token == 'login':
                 return handle_login()
             return show_config()
@@ -53,11 +49,8 @@ def main():
     if args.config:
         return show_config()
 
-    # Resolve permission state ONCE here so all modes (print/REPL) honor
+    # Resolve permission state ONCE here so the REPL honors it consistently.
     _resolve_permission_state(args)
-
-    if args.print:
-        return _run_print_mode(args)
 
     return start_repl(
         stream=args.stream,
@@ -78,79 +71,16 @@ Examples:
   socrates config                      Show current configuration
   socrates --stream                    Start REPL with live response rendering
   socrates                             Start interactive REPL
-  socrates -p "hello"                  Non-interactive mode (text output)
-  socrates -p "hi" --output-format json
-  socrates -p --output-format stream-json --input-format stream-json < input.ndjson
 """,
     )
 
-    parser.add_argument('prompt', nargs='?', help='Prompt to send in non-interactive mode')
     parser.add_argument('--version', action='store_true', help='Show version information')
     parser.add_argument('--config', action='store_true', help='Show current configuration')
     parser.add_argument('--stream', action='store_true', help='Enable live rendering in REPL')
 
-    noninteractive = parser.add_argument_group("non-interactive mode")
-    noninteractive.add_argument(
-        '-p', '--print',
-        action='store_true',
-        help='Print response and exit (useful for pipes)',
-    )
-    noninteractive.add_argument(
-        '--output-format',
-        choices=('text', 'json', 'stream-json'),
-        default='text',
-        help='Output format for --print mode (default: text)',
-    )
-    noninteractive.add_argument(
-        '--input-format',
-        choices=('text', 'stream-json'),
-        default='text',
-        help='Input format for --print mode (default: text)',
-    )
-    noninteractive.add_argument(
-        '--include-partial-messages',
-        action='store_true',
-        help='Include incremental assistant text chunks in stream-json output',
-    )
-    noninteractive.add_argument(
-        '--max-turns',
-        type=int,
-        default=20,
-        help='Maximum number of agent tool turns (default: 20)',
-    )
-    noninteractive.add_argument(
-        '--model',
-        type=str,
-        default=None,
-        help='Override the model used for this run',
-    )
-    noninteractive.add_argument(
-        '--provider',
-        type=str,
-        default=None,
-        help='Override the provider (anthropic, openai, glm, minimax, openrouter, deepseek)',
-    )
-    noninteractive.add_argument(
-        '--allowed-tools',
-        type=str,
-        default=None,
-        help='Comma-separated list of tools allowed to run',
-    )
-    noninteractive.add_argument(
-        '--disallowed-tools',
-        type=str,
-        default=None,
-        help='Comma-separated list of tools that must NOT run',
-    )
-    noninteractive.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Emit verbose diagnostics to stderr',
-    )
-
     # ---- Permissions ----
     # ``--dangerously-skip-permissions`` and ``--allow-dangerously-skip-permissions``
-    # apply to all modes (REPL and headless), so they live in a top-level
+    # apply to the REPL, so they live in a top-level
     permissions_group = parser.add_argument_group("permissions")
     permissions_group.add_argument(
         '--dangerously-skip-permissions',
@@ -179,9 +109,8 @@ Examples:
         help='Initial permission mode (default: default)',
     )
 
-    # Subcommands are intercepted in ``main`` before argparse runs so that a
-    # free-form prompt argument cannot be misinterpreted as a subcommand.
-    # Listing them here purely for ``--help`` documentation.
+    # Subcommands are intercepted in ``main`` before argparse runs. Listing
+    # them here purely for ``--help`` documentation.
     commands_group = parser.add_argument_group("subcommands")
     commands_group.add_argument(
         '--_commands_doc',
@@ -201,7 +130,7 @@ def _resolve_permission_state(args) -> None:
     Computes the effective :class:`PermissionMode` from the CLI flags and
     settings, runs the root/sudo safety gate, and emits a single log line
     when either bypass flag was passed. Stashes the result on ``args`` so
-    every downstream mode (print and REPL) can read it without re-deriving.
+    the REPL can read it without re-deriving.
 
     """
     import logging as _logging
@@ -234,7 +163,7 @@ def _resolve_permission_state(args) -> None:
         or has_allow_bypass_permissions_mode()
     )
 
-    # Stash on args so downstream entrypoints don't need to re-derive.
+    # Stash on args so downstream callers don't need to re-derive.
     args._resolved_permission_mode = mode
     args._resolved_is_bypass_available = is_bypass_available
 
@@ -245,50 +174,6 @@ def _resolve_permission_state(args) -> None:
             allow_dangerously,
             mode,
         )
-
-
-def _run_print_mode(args) -> int:
-    """Delegate to the headless entrypoint."""
-
-    from src.cli_core.exit import cli_error
-    from src.entrypoints.headless import HeadlessOptions, run_headless
-
-    # Some combinations are invalid; report early with a helpful message.
-    if args.input_format == 'stream-json' and args.output_format != 'stream-json':
-        cli_error(
-            "error: --input-format stream-json requires --output-format stream-json",
-            2,
-        )
-    if args.include_partial_messages and args.output_format != 'stream-json':
-        cli_error(
-            "error: --include-partial-messages requires --output-format stream-json",
-            2,
-        )
-
-    allowed = _split_csv(args.allowed_tools)
-    disallowed = _split_csv(args.disallowed_tools)
-
-    options = HeadlessOptions(
-        prompt=args.prompt,
-        output_format=args.output_format,
-        input_format=args.input_format,
-        provider_name=args.provider,
-        model=args.model,
-        max_turns=args.max_turns,
-        permission_mode=args._resolved_permission_mode,
-        is_bypass_permissions_mode_available=args._resolved_is_bypass_available,
-        allowed_tools=tuple(allowed),
-        disallowed_tools=tuple(disallowed),
-        include_partial_messages=bool(args.include_partial_messages),
-        verbose=bool(args.verbose),
-    )
-    return run_headless(options)
-
-
-def _split_csv(value: str | None) -> list[str]:
-    if not value:
-        return []
-    return [item.strip() for item in value.split(',') if item.strip()]
 
 
 def _show_provider_defaults_table() -> None:
