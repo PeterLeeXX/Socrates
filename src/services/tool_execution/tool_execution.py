@@ -7,6 +7,7 @@ tool execution with progress, error handling, and result mapping.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -369,7 +370,7 @@ async def _call_tool(tool: Tool, tool_input: dict[str, Any], context: ToolContex
     if inspect.iscoroutinefunction(call_fn):
         result = await call_fn(tool_input, context)
     else:
-        result = call_fn(tool_input, context)
+        result = await asyncio.to_thread(call_fn, tool_input, context)
 
     if not isinstance(result, ToolResult):
         result = ToolResult(name=tool.name, output=result)

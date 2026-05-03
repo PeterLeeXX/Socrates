@@ -86,20 +86,20 @@ class TestCompressionPipelineLayers(unittest.TestCase):
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=1_000,
-            snip_keep_recent=100,  # high to prevent snip
             mc_keep_recent=100,    # high to prevent mc
         )
         result = asyncio.run(run_compression_pipeline(messages, config=config))
         self.assertIn("tool_result_budget", result.layers_applied)
         self.assertGreater(result.tokens_saved, 0)
 
-    def test_layer2_snip_compact_is_noop(self):
-        """Layer 2 is a no-op stub (matches TS snipCompact.ts)."""
+    def test_layer2_snip_compact_is_removed_from_pipeline_config(self):
+        """Layer 2 snip compact is not configurable or run by the pipeline."""
+        self.assertNotIn("snip_keep_recent", PipelineConfig.__dataclass_fields__)
+
         messages = _make_simple_messages(15)
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=999_999,
-            snip_keep_recent=2,
             mc_keep_recent=100,
         )
         result = asyncio.run(run_compression_pipeline(messages, config=config))
@@ -111,7 +111,6 @@ class TestCompressionPipelineLayers(unittest.TestCase):
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=999_999,
-            snip_keep_recent=100,  # high to skip layer 2
             mc_enabled=True,
             mc_keep_recent=2,
         )
@@ -132,7 +131,6 @@ class TestCompressionPipelineLayers(unittest.TestCase):
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=999_999,
-            snip_keep_recent=100,
             mc_keep_recent=100,
             collapse_store=store,
         )
@@ -146,7 +144,6 @@ class TestCompressionPipelineLayers(unittest.TestCase):
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=999_999,
-            snip_keep_recent=100,
             mc_keep_recent=100,
             context_window=200_000,
             provider=provider,
@@ -179,7 +176,6 @@ class TestCompressionPipelineEarlyExit(unittest.TestCase):
             budget_dir=self.budget_dir,
             max_result_tokens=100,
             early_exit_tokens=1_000,
-            snip_keep_recent=1,
             mc_keep_recent=1,
         )
         result = asyncio.run(run_compression_pipeline(messages, config=config))
@@ -221,7 +217,6 @@ class TestCompressionPipelineAutocompact(unittest.TestCase):
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=999_999,
-            snip_keep_recent=100,
             mc_keep_recent=100,
             context_window=200_000,
             provider=provider,
@@ -251,7 +246,6 @@ class TestCompressionPipelineAutocompact(unittest.TestCase):
             config = PipelineConfig(
                 budget_dir=self.budget_dir,
                 max_result_tokens=999_999,
-                snip_keep_recent=100,
                 mc_keep_recent=100,
                 context_window=200_000,
                     provider=provider,
@@ -284,7 +278,7 @@ class TestCompressionPipelineConvenienceFunction(unittest.TestCase):
         self.assertIsInstance(result, CompressionResult)
 
     def test_with_explicit_config(self):
-        config = PipelineConfig(snip_keep_recent=1, mc_keep_recent=1)
+        config = PipelineConfig(mc_keep_recent=1)
         messages = _make_simple_messages(5)
         result = asyncio.run(run_compression_pipeline(messages, config=config))
         self.assertIsInstance(result, CompressionResult)

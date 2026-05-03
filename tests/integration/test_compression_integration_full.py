@@ -60,9 +60,11 @@ class TestCompressionLayers(unittest.TestCase):
         from src.services.compact.tool_result_budget import apply_tool_result_budget
         self.assertTrue(callable(apply_tool_result_budget))
 
-    def test_snip_compact_exists(self) -> None:
-        from src.services.compact.snip_compact import snip_compact
-        self.assertTrue(callable(snip_compact))
+    def test_snip_compact_is_not_public_layer(self) -> None:
+        import src.services.compact as compact
+
+        self.assertNotIn("snip_compact", compact.__all__)
+        self.assertFalse(hasattr(compact, "snip_compact"))
 
     def test_microcompact_exists(self) -> None:
         from src.context_system.microcompact import microcompact_api_messages

@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
 
 from src.services.tool_execution.orchestrator import (
     Batch,
     partition_tool_calls,
 )
+from src.services.tool_execution.tool_execution import run_tool_use
 from src.services.tool_execution.streaming_executor import ToolUseBlock
 from src.tool_system.build_tool import build_tool, Tool
 from src.tool_system.context import ToolContext, ToolUseOptions
 from src.tool_system.protocol import ToolResult
+from src.types.content_blocks import ToolResultBlock
+from src.types.messages import AssistantMessage
 
 
 def _make_tool(name: str, concurrency_safe: bool = False) -> Tool:
@@ -88,3 +94,38 @@ class TestPartitionToolCalls:
         ctx = _make_context([])
         batches = partition_tool_calls([], ctx)
         assert len(batches) == 0
+
+
+class TestToolExecutionEventLoopBoundary:
+    @pytest.mark.asyncio
+    async def test_sync_tool_can_bridge_to_async_from_running_loop(self):
+        """Sync tools that own async bridges should not run inside query loop."""
+
+        async def _inner() -> str:
+            return "ok"
+
+        def _call(_inp, _ctx):
+            return ToolResult(name="NestedAsync", output=asyncio.run(_inner()))
+
+        tool = build_tool(
+            name="NestedAsync",
+            input_schema={"type": "object", "properties": {}},
+            call=_call,
+        )
+        ctx = _make_context([tool])
+        block = ToolUseBlock(id="tu_nested", name="NestedAsync", input={})
+        assistant = AssistantMessage(content=[block])
+
+        updates = [
+            update
+            async for update in run_tool_use(block, assistant, None, ctx)
+        ]
+
+        assert len(updates) == 1
+        msg = updates[0].message
+        assert msg is not None
+        assert isinstance(msg.content, list)
+        result = msg.content[0]
+        assert isinstance(result, ToolResultBlock)
+        assert result.content == "ok"
+        assert result.is_error is False

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from pathlib import Path
 
 from src.services.tool_execution.tool_hooks import resolve_hook_permission_decision
 from src.services.tool_execution.tool_execution import run_tool_use
 from src.services.tool_execution.streaming_executor import ToolUseBlock
+from src.permissions.types import PermissionAskDecision
 from src.tool_system.build_tool import build_tool, Tool
 from src.tool_system.context import ToolContext, ToolUseOptions
 from src.tool_system.protocol import ToolResult
@@ -107,6 +110,34 @@ class TestResolveHookPermissionDecision:
         decision = await resolve_hook_permission_decision(
             hook_result, tool, {}, ctx, mock_can_use_tool, _make_assistant_msg(), "tu_1"
         )
+        assert decision["behavior"] == "allow"
+
+    @pytest.mark.asyncio
+    async def test_permission_handler_can_bridge_to_async_from_running_loop(self):
+        """Interactive permission handlers must not run inside the query loop."""
+        tool = build_tool(
+            name="AskTool",
+            input_schema={"type": "object", "properties": {}},
+            call=lambda inp, ctx: ToolResult(name="AskTool", output="ok"),
+            check_permissions=lambda _inp, _ctx: PermissionAskDecision(
+                message="Allow AskTool?"
+            ),
+            requires_user_interaction=lambda: True,
+        )
+        ctx = _make_context()
+
+        async def _allow() -> bool:
+            return True
+
+        def _handler(_name, _message, _suggestion):
+            return asyncio.run(_allow()), False
+
+        ctx.permission_handler = _handler
+
+        decision = await resolve_hook_permission_decision(
+            None, tool, {}, ctx, None, _make_assistant_msg(), "tu_1"
+        )
+
         assert decision["behavior"] == "allow"
 
 

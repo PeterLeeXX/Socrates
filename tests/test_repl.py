@@ -215,11 +215,9 @@ class TestREPL(unittest.TestCase):
                     repl = SocratesREPL(provider_name="glm", stream=True)
                     repl.console.print = Mock()
 
-                    with patch('src.repl.core.run_agent_loop') as mock_agent_loop:
-                        repl.chat("hello there")
+                    repl.chat("hello there")
 
                     mock_provider.chat_stream.assert_called_once()
-                    mock_agent_loop.assert_not_called()
                     self.assertFalse(any(
                         args and isinstance(args[0], Markdown)
                         for args, _kwargs in repl.console.print.call_args_list

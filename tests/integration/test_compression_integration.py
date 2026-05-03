@@ -43,7 +43,6 @@ from src.services.compact.autocompact import (
 )
 from src.services.compact.context_collapse import ContextCollapseStore
 from src.services.compact.tool_result_budget import apply_tool_result_budget
-from src.services.compact.snip_compact import snip_compact
 from src.context_system.microcompact import (
     microcompact_typed_messages,
     microcompact_api_messages,
@@ -101,15 +100,14 @@ class TestEndToEndPipeline(unittest.TestCase):
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=500,
-            snip_keep_recent=3,
             mc_keep_recent=3,
             early_exit_tokens=999_999,  # Don't early-exit
         )
         result = asyncio.run(run_compression_pipeline(messages, config=config))
         self.assertGreater(result.tokens_saved, 0)
-        # At least one of the first 3 layers should have triggered
+        # At least one lightweight layer should have triggered.
         layer_set = set(result.layers_applied)
-        self.assertTrue(layer_set & {"tool_result_budget", "snip_compact", "microcompact"})
+        self.assertTrue(layer_set & {"tool_result_budget", "microcompact"})
 
     def test_long_conversation_all_layers(self):
         """Long conversation triggers autocompact when provider is set."""
@@ -127,7 +125,6 @@ class TestEndToEndPipeline(unittest.TestCase):
         config = PipelineConfig(
             budget_dir=self.budget_dir,
             max_result_tokens=500,
-            snip_keep_recent=3,
             mc_keep_recent=3,
             context_window=1_000,
             autocompact_tracking=tracking,
@@ -286,8 +283,8 @@ class TestLayerInteractions(unittest.TestCase):
     def tearDown(self):
         self.tmpdir.cleanup()
 
-    def test_budget_then_snip_then_microcompact(self):
-        """All three lightweight layers can run sequentially."""
+    def test_budget_then_microcompact(self):
+        """The remaining lightweight layers can run sequentially."""
         messages = _make_long_conversation(20)
 
         # Layer 1
@@ -296,14 +293,11 @@ class TestLayerInteractions(unittest.TestCase):
         )
 
         # Layer 2
-        messages, saved2 = snip_compact(messages, keep_recent=3)
-
-        # Layer 3
-        messages, saved3 = microcompact_typed_messages(
+        messages, saved2 = microcompact_typed_messages(
             messages, keep_recent=3, force=True,
         )
 
-        total_saved = saved1 + saved2 + saved3
+        total_saved = saved1 + saved2
         self.assertGreater(total_saved, 0)
         # Messages should still be a valid list
         self.assertIsInstance(messages, list)

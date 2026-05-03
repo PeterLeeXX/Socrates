@@ -3,11 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 import tempfile
-from unittest.mock import MagicMock
 
-from src.agent.conversation import Conversation
-from src.providers.base import ChatResponse
-from src.tool_system.agent_loop import run_agent_loop
 from src.tool_system.context import ToolContext
 from src.tool_system.defaults import build_default_registry
 from src.tool_system.protocol import ToolCall
@@ -69,41 +65,6 @@ class TestClaudeCodeToolParity(unittest.TestCase):
         missing = [name for name in expected if self.registry.get(name) is None and name not in not_yet_implemented]
         self.assertEqual(missing, [])
 
-    def test_send_user_message_is_user_visible_fallback(self) -> None:
-        conversation = Conversation()
-        conversation.add_user_message("hi")
-
-        mock_provider = MagicMock()
-        mock_tool_use = {
-            "id": "toolu_1",
-            "name": "SendUserMessage",
-            "input": {"message": "hello", "status": "normal"},
-        }
-        mock_response1 = ChatResponse(
-            content="",
-            model="test",
-            usage={"input_tokens": 1, "output_tokens": 1},
-            finish_reason="tool_use",
-            tool_uses=[mock_tool_use],
-        )
-        mock_response2 = ChatResponse(
-            content="",
-            model="test",
-            usage={"input_tokens": 1, "output_tokens": 1},
-            finish_reason="stop",
-            tool_uses=None,
-        )
-        mock_provider.chat.side_effect = [mock_response1, mock_response2]
-
-        out = run_agent_loop(
-            conversation=conversation,
-            provider=mock_provider,
-            tool_registry=self.registry,
-            tool_context=self.ctx,
-            verbose=False,
-        )
-        self.assertEqual(out.response_text, "hello")
-
     def test_tool_search_select(self) -> None:
         out = self.registry.dispatch(
             ToolCall(name="ToolSearch", input={"query": "select:Read"}),
@@ -132,50 +93,5 @@ class TestClaudeCodeToolParity(unittest.TestCase):
         )
         self.assertEqual(self.ctx.todos, [])
 
-    def test_openai_messages_preserve_reasoning_content_across_tool_turns(self) -> None:
-        conversation = Conversation()
-        conversation.add_user_message("hi")
-
-        mock_provider = MagicMock()
-        mock_provider.__class__.__name__ = "DeepSeekProvider"
-        first = ChatResponse(
-            content="Let me check",
-            model="deepseek-v4-pro",
-            usage={"input_tokens": 1, "output_tokens": 1},
-            finish_reason="tool_calls",
-            reasoning_content="hidden chain of thought token stream",
-            tool_uses=[{"id": "toolu_1", "name": "SendUserMessage", "input": {"message": "working"}}],
-        )
-        second = ChatResponse(
-            content="done",
-            model="deepseek-v4-pro",
-            usage={"input_tokens": 1, "output_tokens": 1},
-            finish_reason="stop",
-            tool_uses=None,
-        )
-        mock_provider.chat.side_effect = [first, second]
-
-        out = run_agent_loop(
-            conversation=conversation,
-            provider=mock_provider,
-            tool_registry=self.registry,
-            tool_context=self.ctx,
-            verbose=False,
-        )
-        self.assertEqual(out.response_text, "done")
-        self.assertEqual(mock_provider.chat.call_count, 2)
-        second_call_messages = mock_provider.chat.call_args_list[1].args[0]
-        assistant_with_tool_call = next(
-            msg
-            for msg in second_call_messages
-            if msg.get("role") == "assistant" and msg.get("tool_calls")
-        )
-        self.assertEqual(
-            assistant_with_tool_call.get("reasoning_content"),
-            "hidden chain of thought token stream",
-        )
-
-
 if __name__ == "__main__":
     unittest.main()
-

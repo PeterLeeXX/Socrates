@@ -2,10 +2,9 @@
 Compression pipeline for context management.
 
 1. tool_result_budget — Persist large tool results to disk
-2. snip_compact       — Trim old tool results (preserve structure)
-3. microcompact       — Compress intermediate tool calls
-4. context_collapse   — Read-time projection via collapse store
-5. autocompact        — Full LLM summarization (last resort)
+2. microcompact       — Compress intermediate tool calls
+3. context_collapse   — Read-time projection via collapse store
+4. autocompact        — Full LLM summarization (last resort)
 
 The pipeline runs cheap → expensive; if earlier layers free enough tokens,
 later layers are no-ops.
@@ -15,7 +14,6 @@ from __future__ import annotations
 
 from .pipeline import CompressionPipeline, CompressionResult, run_compression_pipeline
 from .tool_result_budget import apply_tool_result_budget
-from .snip_compact import snip_compact
 from .context_collapse import ContextCollapseStore, CollapseCommit
 from .autocompact import (
     should_auto_compact,
@@ -49,7 +47,6 @@ __all__ = [
     "CompressionResult",
     "run_compression_pipeline",
     "apply_tool_result_budget",
-    "snip_compact",
     "ContextCollapseStore",
     "CollapseCommit",
     "should_auto_compact",

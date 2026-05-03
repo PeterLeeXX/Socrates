@@ -7,6 +7,7 @@ Key invariant: hook 'allow' does NOT bypass settings deny/ask rules.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, AsyncGenerator
@@ -418,7 +419,15 @@ async def _resolve_tool_permission(
                     allowed, _user_modified = raw_handler(tool_name, message, None)
                     return allowed, None
 
-            decision = handle_permission_ask(tool.name, decision, handler)
+            if handler is not None:
+                decision = await asyncio.to_thread(
+                    handle_permission_ask,
+                    tool.name,
+                    decision,
+                    handler,
+                )
+            else:
+                decision = handle_permission_ask(tool.name, decision, handler)
         return _permission_decision_to_dict(decision, tool_input)
     except Exception as e:
         logger.debug("permission resolution error: %s", e)
