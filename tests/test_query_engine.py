@@ -5,6 +5,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from src.providers.base import ChatResponse
+from src.permissions.check import has_permissions_to_use_tool
+from src.permissions.types import PermissionDenyDecision
 from src.tool_system.context import ToolContext
 from src.tool_system.defaults import build_default_registry
 from src.types.content_blocks import TextBlock
@@ -124,6 +126,66 @@ class TestQueryEngine(unittest.TestCase):
         engine = self._make_engine(MagicMock())
         self.assertIsInstance(engine.session_id, str)
         self.assertGreater(len(engine.session_id), 0)
+
+    def test_plan_mode_injects_prompt_and_defers_tool_filtering_to_query_loop(self):
+        provider = MagicMock()
+        self.context.plan_mode = True
+
+        captured = {}
+
+        async def fake_query(params):
+            captured["system_prompt"] = params.system_prompt
+            captured["tools"] = [tool.name for tool in params.tools]
+            yield AssistantMessage(content="planned")
+
+        config = QueryEngineConfig(
+            cwd=self.workspace,
+            provider=provider,
+            tool_registry=self.registry,
+            tools=self.registry.list_tools(),
+            tool_context=self.context,
+            max_turns=10,
+        )
+        engine = QueryEngine(config)
+
+        async def run():
+            with unittest.mock.patch("src.query.engine.query", fake_query):
+                async for _ in engine.submit_message("Plan a change"):
+                    pass
+
+        _run(run())
+
+        self.assertIn("PLAN MODE", captured["system_prompt"])
+        self.assertIn("NOT available", captured["system_prompt"])
+        self.assertIn("Write", captured["system_prompt"])
+        self.assertIn("Bash", captured["system_prompt"])
+        self.assertIn("Read", captured["tools"])
+        self.assertIn("ExitPlanMode", captured["tools"])
+        self.assertIn("Write", captured["tools"])
+        self.assertIn("Edit", captured["tools"])
+        self.assertIn("Bash", captured["tools"])
+
+    def test_plan_mode_permission_guard_denies_write_but_allows_exit(self):
+        self.context.plan_mode = True
+        write_tool = self.registry.get("Write")
+        exit_tool = self.registry.get("ExitPlanMode")
+
+        write_decision = has_permissions_to_use_tool(
+            write_tool,
+            {},
+            self.context.permission_context,
+            tool_use_context=self.context,
+        )
+        exit_decision = has_permissions_to_use_tool(
+            exit_tool,
+            {},
+            self.context.permission_context,
+            tool_use_context=self.context,
+        )
+
+        self.assertIsInstance(write_decision, PermissionDenyDecision)
+        self.assertIn("plan mode", write_decision.message)
+        self.assertNotEqual(exit_decision.behavior, "deny")
 
 
 if __name__ == "__main__":

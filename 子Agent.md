@@ -366,7 +366,6 @@ initial_messages = [UserMessage(content=Agent工具input.prompt)]
 | 字段 | 子 Agent 默认值 | 目的 |
 |---|---|---|
 | `read_file_fingerprints` | `{}` | 子 Agent 没读过父 Agent 读过的文件，避免 Read 工具误判 `file_unchanged`。 |
-| `todos` | `[]` | 子 Agent TODO 不污染父 Agent。 |
 | `tasks` | `{}` | 子 Agent task 状态隔离。 |
 | `outbox` | `[]` | 输出队列隔离。 |
 | `crons` | `{}` | 定时任务隔离。 |
@@ -456,7 +455,10 @@ MCP 工具特殊处理：
 ```text
 Read
 WebSearch
-TodoWrite
+TaskCreate
+TaskGet
+TaskList
+TaskUpdate
 Grep
 WebFetch
 Glob
@@ -721,4 +723,3 @@ pending -> running -> completed / failed / cancelled
 当前子 Agent 可以理解为：
 
 > 主 Agent 通过 `Agent` 工具发起一次同进程的嵌套 `query()`；子 Agent 使用派生且隔离的 `ToolContext`、过滤后的工具集和自己的 system prompt 完成任务；同步模式把最终 assistant 文本压缩成一个 `tool_result` 返回给主 Agent，后台模式目前只是半成品调度接口。
-

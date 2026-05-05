@@ -833,6 +833,15 @@ def _build_plan_mode_section(use_cache: bool) -> SystemPromptSection | None:
     return SystemPromptSection(id="plan_mode", content=_PLAN_MODE_PROMPT, cache_scope=CacheScope.REQUEST, order=70)
 
 
+def build_plan_mode_overlay(tool_restrictions: list[str] | None = None) -> str:
+    sections = [_PLAN_MODE_PROMPT]
+    if tool_restrictions:
+        restrictions = _build_tool_restrictions_section(tool_restrictions)
+        if restrictions:
+            sections.append(restrictions.content)
+    return "\n\n".join(sections)
+
+
 _NON_INTERACTIVE_PROMPT = (
     "# Non-Interactive Mode\n"
     "You are running in non-interactive (SDK/non-interactive) mode.\n"

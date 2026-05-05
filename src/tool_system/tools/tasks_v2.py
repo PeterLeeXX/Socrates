@@ -7,7 +7,6 @@ from ..build_tool import Tool, build_tool
 from ..context import ToolContext
 from ..errors import ToolInputError
 from ..protocol import ToolResult
-from src.utils.task_flags import is_todo_v2_enabled
 
 
 _TASK_STATUSES = {"pending", "in_progress", "completed"}
@@ -188,7 +187,6 @@ All tasks are created with status `pending`.
     max_result_size_chars=100_000,
     is_read_only=lambda _input: True,
     is_concurrency_safe=lambda _input: True,
-    is_enabled=is_todo_v2_enabled,
 )
 
 
@@ -250,7 +248,6 @@ Returns full task details:
     max_result_size_chars=100_000,
     is_read_only=lambda _input: True,
     is_concurrency_safe=lambda _input: True,
-    is_enabled=is_todo_v2_enabled,
 )
 
 
@@ -313,7 +310,6 @@ Use TaskGet with a specific task ID to view full details including description a
     max_result_size_chars=100_000,
     is_read_only=lambda _input: True,
     is_concurrency_safe=lambda _input: True,
-    is_enabled=is_todo_v2_enabled,
 )
 
 
@@ -490,7 +486,6 @@ Set up task dependencies:
     max_result_size_chars=100_000,
     is_read_only=lambda _input: True,
     is_concurrency_safe=lambda _input: True,
-    is_enabled=is_todo_v2_enabled,
 )
 
 

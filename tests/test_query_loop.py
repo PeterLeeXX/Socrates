@@ -133,6 +133,117 @@ class TestQueryLoopSingleTurn(unittest.TestCase):
         ]
         self.assertGreaterEqual(len(tool_results), 1)
 
+    def test_enter_plan_mode_updates_followup_prompt_and_tools(self):
+        provider = MagicMock()
+        provider.chat_stream_response.side_effect = NotImplementedError()
+
+        provider.chat.side_effect = [
+            ChatResponse(
+                content="Entering plan mode.",
+                model="test",
+                usage={"input_tokens": 10, "output_tokens": 20},
+                finish_reason="tool_use",
+                tool_uses=[{
+                    "id": "toolu_plan_001",
+                    "name": "EnterPlanMode",
+                    "input": {},
+                }],
+            ),
+            ChatResponse(
+                content="Here is the plan.",
+                model="test",
+                usage={"input_tokens": 30, "output_tokens": 10},
+                finish_reason="end_turn",
+                tool_uses=None,
+            ),
+        ]
+
+        params = QueryParams(
+            messages=[UserMessage(content="Plan before editing")],
+            system_prompt="Base prompt.",
+            tools=self.registry.list_tools(),
+            tool_registry=self.registry,
+            tool_use_context=self.context,
+            provider=provider,
+            abort_controller=self.abort,
+            max_turns=10,
+        )
+
+        async def run():
+            async for _msg in query(params):
+                pass
+
+        _run(run())
+
+        self.assertEqual(provider.chat.call_count, 2)
+        second_call_messages = provider.chat.call_args_list[1].args[0]
+        second_system_prompt = second_call_messages[0]["content"]
+        second_tool_names = [
+            tool["name"] for tool in provider.chat.call_args_list[1].kwargs["tools"]
+        ]
+
+        self.assertIn("PLAN MODE", second_system_prompt)
+        self.assertIn("NOT available", second_system_prompt)
+        self.assertIn("ExitPlanMode", second_tool_names)
+        self.assertIn("Read", second_tool_names)
+        self.assertNotIn("Write", second_tool_names)
+        self.assertNotIn("Bash", second_tool_names)
+
+    def test_exit_plan_mode_restores_followup_prompt_and_tools(self):
+        provider = MagicMock()
+        provider.chat_stream_response.side_effect = NotImplementedError()
+        self.context.plan_mode = True
+
+        provider.chat.side_effect = [
+            ChatResponse(
+                content="Exiting plan mode.",
+                model="test",
+                usage={"input_tokens": 10, "output_tokens": 20},
+                finish_reason="tool_use",
+                tool_uses=[{
+                    "id": "toolu_plan_exit_001",
+                    "name": "ExitPlanMode",
+                    "input": {"plan": "1. Make the change\n2. Run tests"},
+                }],
+            ),
+            ChatResponse(
+                content="Ready to implement.",
+                model="test",
+                usage={"input_tokens": 30, "output_tokens": 10},
+                finish_reason="end_turn",
+                tool_uses=None,
+            ),
+        ]
+
+        params = QueryParams(
+            messages=[UserMessage(content="Exit plan mode and continue")],
+            system_prompt="Base prompt.",
+            tools=self.registry.list_tools(),
+            tool_registry=self.registry,
+            tool_use_context=self.context,
+            provider=provider,
+            abort_controller=self.abort,
+            max_turns=10,
+        )
+
+        async def run():
+            async for _msg in query(params):
+                pass
+
+        _run(run())
+
+        self.assertEqual(provider.chat.call_count, 2)
+        second_call_messages = provider.chat.call_args_list[1].args[0]
+        second_system_prompt = second_call_messages[0]["content"]
+        second_tool_names = [
+            tool["name"] for tool in provider.chat.call_args_list[1].kwargs["tools"]
+        ]
+
+        self.assertNotIn("PLAN MODE", second_system_prompt)
+        self.assertIn("Write", second_tool_names)
+        self.assertIn("Edit", second_tool_names)
+        self.assertIn("Bash", second_tool_names)
+
     def test_multi_turn_replays_reasoning_content_for_followup(self):
         provider = MagicMock()
         provider.chat_stream_response.side_effect = NotImplementedError()

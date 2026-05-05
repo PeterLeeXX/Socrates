@@ -70,7 +70,6 @@ class ToolContext:
     task_manager: TaskManager = field(default_factory=TaskManager)
     mcp_clients: dict[str, Any] = field(default_factory=dict)
     lsp_client: Any | None = None
-    todos: list[dict[str, Any]] = field(default_factory=list)
     tasks: dict[str, dict[str, Any]] = field(default_factory=dict)
     # Background Bash commands spawned via ``run_in_background: true``.
     # Keyed by background-task id. Each entry holds the ``Popen`` handle,

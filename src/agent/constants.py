@@ -37,7 +37,10 @@ CUSTOM_AGENT_DISALLOWED_TOOLS: frozenset[str] = frozenset([
 ASYNC_AGENT_ALLOWED_TOOLS: frozenset[str] = frozenset([
     "Read",
     "WebSearch",
-    "TodoWrite",
+    "TaskCreate",
+    "TaskGet",
+    "TaskList",
+    "TaskUpdate",
     "Grep",
     "WebFetch",
     "Glob",

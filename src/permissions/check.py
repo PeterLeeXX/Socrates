@@ -26,6 +26,7 @@ from .types import (
     SafetyCheckDecisionReason,
     ToolPermissionContext,
 )
+from src.plan_mode_policy import is_tool_allowed_in_plan_mode
 
 if TYPE_CHECKING:
     pass
@@ -137,6 +138,13 @@ def has_permissions_to_use_tool_inner(
     *,
     tool_use_context: Any | None = None,
 ) -> PermissionDecision:
+    if getattr(tool_use_context, "plan_mode", False) and not is_tool_allowed_in_plan_mode(tool):
+        return PermissionDenyDecision(
+            behavior="deny",
+            message=f"{tool.name} is not allowed in plan mode.",
+            decision_reason=ModeDecisionReason(mode="plan"),
+        )
+
     deny_rule = get_deny_rule_for_tool(context, tool)
     if deny_rule:
         return PermissionDenyDecision(

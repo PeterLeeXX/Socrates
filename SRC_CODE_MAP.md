@@ -4,7 +4,7 @@
 
 ## 1. 主 Agent Loop 位置
 
-- 主同步 agent loop：`src/tool_system/agent_loop.py::run_agent_loop`，负责模型调用、工具分发、多轮循环和最终回复。
+- 主交互式 query loop：`src/query/query.py::query`，负责模型调用、工具分批执行、工具结果回填、多轮循环和最终回复。
 - 交互式入口：`src/repl/core.py::SocratesREPL.chat`。
 - 异步 query pipeline：`src/query/query.py::query`。
 - 子 agent loop：`src/agent/run_agent.py::run_agent`。
@@ -265,13 +265,13 @@ src/
 |   |   |-- path_utils.py
 |   |   `-- ripgrep.py
 |   |-- __init__.py
-|   |-- agent_loop.py
 |   |-- build_tool.py
 |   |-- context.py
 |   |-- defaults.py
 |   |-- diff_utils.py
 |   |-- errors.py
 |   |-- loader.py
+|   |-- tool_summaries.py
 |   |-- protocol.py
 |   |-- registry.py
 |   |-- schema_validation.py
@@ -292,7 +292,6 @@ src/
 |   |-- file_state_cache.py
 |   |-- git.py
 |   |-- messages.py
-|   `-- task_flags.py
 |-- __init__.py
 |-- cli.py
 |-- config.py
@@ -583,16 +582,16 @@ SKILL.md 技能模型、加载、frontmatter、参数替换和内置技能。
 
 ### `tool_system`
 
-工具协议、注册表、默认工具池、Agent 主循环和所有内置工具。
+工具协议、注册表、默认工具池、工具摘要辅助和所有内置工具。
 
 - `src/tool_system/__init__.py`：初始化 `tool_system` 包并导出公共 API。
-- `src/tool_system/agent_loop.py`：主 agent loop：驱动模型调用、工具调用、权限检查和多轮循环。
-- `src/tool_system/build_tool.py`：`build tool` 模块，隶属于 工具协议、注册表、默认工具池、Agent 主循环和所有内置工具。
-- `src/tool_system/context.py`：`context` 模块，隶属于 工具协议、注册表、默认工具池、Agent 主循环和所有内置工具。
-- `src/tool_system/defaults.py`：`defaults` 模块，隶属于 工具协议、注册表、默认工具池、Agent 主循环和所有内置工具。
-- `src/tool_system/diff_utils.py`：`diff utils` 模块，隶属于 工具协议、注册表、默认工具池、Agent 主循环和所有内置工具。
+- `src/tool_system/build_tool.py`：`build tool` 模块，隶属于 工具协议、注册表、默认工具池、工具摘要辅助和所有内置工具。
+- `src/tool_system/context.py`：`context` 模块，隶属于 工具协议、注册表、默认工具池、工具摘要辅助和所有内置工具。
+- `src/tool_system/defaults.py`：`defaults` 模块，隶属于 工具协议、注册表、默认工具池、工具摘要辅助和所有内置工具。
+- `src/tool_system/diff_utils.py`：`diff utils` 模块，隶属于 工具协议、注册表、默认工具池、工具摘要辅助和所有内置工具。
 - `src/tool_system/errors.py`：API 错误类型与错误分类。
 - `src/tool_system/loader.py`：按所在包语义加载资源、工具、技能或插件。
+- `src/tool_system/tool_summaries.py`：工具调用摘要辅助，供 REPL 渲染紧凑工具调用标题。
 - `src/tool_system/protocol.py`：`protocol` 模块，隶属于 工具协议、注册表、默认工具池、Agent 主循环和所有内置工具。
 - `src/tool_system/registry.py`：注册表：保存、查找、去重、分发对应对象。
 - `src/tool_system/schema_validation.py`：`schema validation` 模块，隶属于 工具协议、注册表、默认工具池、Agent 主循环和所有内置工具。
@@ -663,4 +662,3 @@ SKILL.md 技能模型、加载、frontmatter、参数替换和内置技能。
 - `src/utils/file_state_cache.py`：`file state cache` 模块，隶属于 通用工具：中止控制、deep link、effort、文件状态、git、消息处理、任务开关。
 - `src/utils/git.py`：`git` 模块，隶属于 通用工具：中止控制、deep link、effort、文件状态、git、消息处理、任务开关。
 - `src/utils/messages.py`：`messages` 模块，隶属于 通用工具：中止控制、deep link、effort、文件状态、git、消息处理、任务开关。
-- `src/utils/task_flags.py`：`task flags` 模块，隶属于 通用工具：中止控制、deep link、effort、文件状态、git、消息处理、任务开关。

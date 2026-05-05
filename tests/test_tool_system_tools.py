@@ -35,7 +35,6 @@ from src.tool_system.tools import (
     ReadMcpResourceTool,
     SkillTool,
     SleepTool,
-    TodoWriteTool,
     StructuredOutputTool,
     TaskStopTool,
     TaskCreateTool,
@@ -188,6 +187,26 @@ class TestBashTool(ToolSystemTests):
         out = BashTool.call({"command": "echo hello"}, self.ctx).output
         self.assertEqual(out["exit_code"], 0)
         self.assertIn("hello", out["stdout"])
+
+    def test_bash_cwd_tracking_tempfile_does_not_leak_into_workspace(self) -> None:
+        out = BashTool.call({"command": "echo cwd-check"}, self.ctx).output
+
+        self.assertEqual(out["exit_code"], 0)
+        leaked = [
+            p for p in self.root.iterdir()
+            if "socrates-bash-cwd-" in p.name
+        ]
+        self.assertEqual(leaked, [])
+
+    def test_bash_compound_cd_updates_persistent_cwd(self) -> None:
+        subdir = self.root / "subdir"
+        subdir.mkdir()
+
+        out = BashTool.call({"command": "cd subdir && pwd"}, self.ctx).output
+
+        self.assertEqual(out["exit_code"], 0)
+        self.assertEqual(self.ctx.cwd, subdir)
+        self.assertEqual(out["cwd"], str(subdir))
 
     def test_bash_blocks_sudo(self) -> None:
         with self.assertRaises(Exception):
@@ -498,13 +517,6 @@ class TestNewParityTools(ToolSystemTests):
             self.ctx,
         ).output
         self.assertEqual(out["answers"]["Choose?"], "Option A")
-
-    def test_todo_write(self) -> None:
-        out = TodoWriteTool.call(
-            {"todos": [{"content": "x", "status": "pending", "activeForm": "Doing x"}]},
-            self.ctx,
-        ).output
-        self.assertEqual(out["newTodos"][0]["content"], "x")
 
     def test_task_tools_roundtrip(self) -> None:
         created = TaskCreateTool.call({"subject": "T1", "description": "D1"}, self.ctx).output

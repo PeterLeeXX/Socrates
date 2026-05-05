@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from src.permissions.types import ToolPermissionContext
+from src.bootstrap.state import set_is_interactive
 from src.tool_system.build_tool import Tool, build_tool
 from src.tool_system.context import ToolContext
 from src.tool_system.defaults import build_default_registry
@@ -204,6 +205,16 @@ class TestPipelineFunctions(unittest.TestCase):
         names = [t.name for t in tools]
         self.assertIn("Enabled", names)
         self.assertNotIn("Disabled", names)
+
+    def test_default_tools_use_task_v2_not_legacy_todo_write(self) -> None:
+        set_is_interactive(False)
+        reg = build_default_registry()
+        tools = get_tools(reg, ToolPermissionContext())
+        names = [t.name for t in tools]
+
+        self.assertIn("TaskCreate", names)
+        self.assertIn("TaskUpdate", names)
+        self.assertNotIn("TodoWrite", names)
 
     def test_assemble_tool_pool_sorts_by_name(self) -> None:
         reg = ToolRegistry([_make_tool("Zebra"), _make_tool("Alpha")])

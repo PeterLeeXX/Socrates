@@ -31,7 +31,6 @@ from .tasks_v2 import (
     TaskUpdateTool,
 )
 from .team import TeamCreateTool, TeamDeleteTool
-from .todo_write import TodoWriteTool
 from .tool_search import make_tool_search_tool
 from .web_fetch import WebFetchTool
 from .web_search import WebSearchTool
@@ -74,7 +73,6 @@ ALL_STATIC_TOOLS: list[Tool] = [
     TaskUpdateTool,
     TeamCreateTool,
     TeamDeleteTool,
-    TodoWriteTool,
     WebFetchTool,
     WebSearchTool,
     WriteTool,
@@ -117,7 +115,6 @@ __all__ = [
     "TaskUpdateTool",
     "TeamCreateTool",
     "TeamDeleteTool",
-    "TodoWriteTool",
     "WebFetchTool",
     "WebSearchTool",
     "WriteTool",

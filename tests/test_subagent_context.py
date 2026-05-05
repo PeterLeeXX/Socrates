@@ -39,14 +39,6 @@ class TestDefaultIsolation:
         child.read_file_fingerprints[Path("/tmp/b.py")] = (300, 400)
         assert Path("/tmp/b.py") not in parent.read_file_fingerprints
 
-    def test_todos_fresh(self):
-        parent = _make_parent_context()
-        parent.todos = [{"text": "parent todo"}]
-
-        child = create_subagent_context(parent)
-
-        assert child.todos == []
-
     def test_tasks_fresh(self):
         parent = _make_parent_context()
         parent.tasks = {"t1": {"name": "task1"}}

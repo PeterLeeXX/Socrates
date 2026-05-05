@@ -61,7 +61,7 @@ def create_subagent_context(
     - abort_controller: new controller linked to parent (parent abort propagates)
     - permission_context: wrapped to set should_avoid_permission_prompts
     - Mutation callbacks: no-op
-    - Fresh collections: todos, tasks, outbox
+    - Fresh collections: tasks, outbox
 
     Callers can:
     - Override specific fields via the overrides parameter
@@ -156,7 +156,6 @@ def create_subagent_context(
         mcp_clients=parent_context.mcp_clients,
         lsp_client=parent_context.lsp_client,
         # Fresh isolated collections
-        todos=[],
         tasks={},
         outbox=[],
         crons={},

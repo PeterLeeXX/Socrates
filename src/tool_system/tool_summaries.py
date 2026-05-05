@@ -21,14 +21,14 @@ def summarize_tool_use(name: str, tool_input: dict[str, Any]) -> str:
                 if isinstance(off, int) or isinstance(lim, int):
                     start = off if isinstance(off, int) else 1
                     if isinstance(lim, int):
-                        extra = f" 路 lines {start}-{start + lim - 1}"
+                        extra = f" lines {start}-{start + lim - 1}"
             return f"{p}{extra}"
         return ""
     if lowered == "glob":
         pat = tool_input.get("pattern")
         base = tool_input.get("path")
         if isinstance(pat, str) and isinstance(base, str):
-            return f"{pat} 路 {base}"
+            return f"{pat} in {base}"
         if isinstance(pat, str):
             return pat
         return ""
@@ -36,7 +36,7 @@ def summarize_tool_use(name: str, tool_input: dict[str, Any]) -> str:
         pat = tool_input.get("pattern")
         base = tool_input.get("path")
         if isinstance(pat, str) and isinstance(base, str):
-            return f"{pat} 路 {base}"
+            return f"{pat} in {base}"
         if isinstance(pat, str):
             return pat
         return ""

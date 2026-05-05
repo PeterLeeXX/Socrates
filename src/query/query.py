@@ -16,6 +16,11 @@ from ..types.content_blocks import TextBlock, ToolResultBlock, ToolUseBlock
 from ..tool_system.build_tool import Tools
 from ..tool_system.context import ToolContext
 from ..tool_system.registry import ToolRegistry
+from ..plan_mode_policy import (
+    PLAN_MODE_RESTRICTED_TOOL_NAMES,
+    filter_tools_for_plan_mode,
+)
+from ..context_system.prompt_assembly import build_plan_mode_overlay
 from ..utils.abort_controller import AbortController
 from ..providers.base import BaseProvider
 
@@ -99,6 +104,24 @@ def _create_max_turns_attachment(max_turns: int, turn_count: int) -> SystemMessa
         content=f"Reached maximum number of turns ({max_turns})",
         subtype="max_turns_reached",
     )
+
+
+def _get_effective_prompt_and_tools(
+    *,
+    system_prompt: str,
+    tools: Tools,
+    tool_use_context: ToolContext,
+) -> tuple[str, Tools]:
+    if not getattr(tool_use_context, "plan_mode", False):
+        return system_prompt, tools
+
+    prompt = system_prompt
+    if "PLAN MODE" not in prompt:
+        prompt = (
+            f"{prompt}\n\n"
+            f"{build_plan_mode_overlay(list(PLAN_MODE_RESTRICTED_TOOL_NAMES))}"
+        )
+    return prompt, filter_tools_for_plan_mode(tools)
 
 
 def _yield_missing_tool_result_blocks(
@@ -307,7 +330,12 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
                 state.transition.reason if state.transition else "initial",
             )
         tool_use_context = state.tool_use_context
-        tool_use_context.options.tools = params.tools
+        effective_system_prompt, effective_tools = _get_effective_prompt_and_tools(
+            system_prompt=params.system_prompt,
+            tools=params.tools,
+            tool_use_context=tool_use_context,
+        )
+        tool_use_context.options.tools = effective_tools
         max_output_tokens_recovery_count = state.max_output_tokens_recovery_count
         has_attempted_reactive_compact = state.has_attempted_reactive_compact
         max_output_tokens_override = state.max_output_tokens_override
@@ -347,8 +375,8 @@ async def query(params: QueryParams) -> AsyncGenerator[Message | StreamEvent, No
             returned_assistants, returned_tool_blocks = await _call_model_sync(
                 provider=params.provider,
                 messages=messages,
-                system_prompt=params.system_prompt,
-                tools=params.tools,
+                system_prompt=effective_system_prompt,
+                tools=effective_tools,
                 max_output_tokens_override=max_output_tokens_override,
             )
             assistant_messages = returned_assistants

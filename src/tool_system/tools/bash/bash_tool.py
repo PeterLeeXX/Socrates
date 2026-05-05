@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -53,9 +54,45 @@ def _try_extract_cd(command: str) -> Path | None:
         parts = shlex.split(stripped, posix=True)
     except ValueError:
         return None
-    if len(parts) >= 2 and parts[0] == "cd":
+    if len(parts) == 2 and parts[0] == "cd":
         return Path(parts[1])
     return None
+
+
+def _paths_for_bash(path: str | Path) -> list[str]:
+    text = str(path)
+    if os.name != "nt":
+        return [text]
+
+    match = re.match(r"^([A-Za-z]):[\\/](.*)$", text)
+    if not match:
+        return [text.replace("\\", "/")]
+
+    drive = match.group(1).lower()
+    rest = match.group(2).replace("\\", "/")
+    return [
+        f"/mnt/{drive}/{rest}",
+        f"{drive.upper()}:/{rest}",
+    ]
+
+
+def _path_from_bash_pwd(path: str) -> str:
+    if os.name != "nt":
+        return path
+
+    match = re.match(r"^/mnt/([A-Za-z])/(.*)$", path)
+    if match:
+        drive = match.group(1).upper()
+        rest = match.group(2).replace("/", "\\")
+        return f"{drive}:\\{rest}"
+    return path
+
+
+def _bash_cd_command(path: str | Path) -> str:
+    return " || ".join(
+        f"cd {shlex.quote(candidate)} 2>/dev/null"
+        for candidate in _paths_for_bash(path)
+    )
 
 
 def _bash_check_permissions(
@@ -168,20 +205,29 @@ def _bash_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
     # update ``context.cwd``. This way ``cd demos && ls`` (compound) or a
     # ``pushd`` inside a script correctly moves the persistent CWD forward
     # instead of being discarded with the subprocess.
-    import os as _os
     import tempfile as _tempfile
 
     cwd_fd, cwd_path = _tempfile.mkstemp(prefix="socrates-bash-cwd-", suffix=".txt")
-    _os.close(cwd_fd)
+    os.close(cwd_fd)
+    pwd_writes = " || ".join(
+        f"pwd > {shlex.quote(candidate)} 2>/dev/null"
+        for candidate in _paths_for_bash(cwd_path)
+    )
     try:
-        wrapped = f"{{ {command}\n}}; __rc=$?; pwd > {shlex.quote(cwd_path)} 2>/dev/null; exit $__rc"
+        cd_prefix = f"{_bash_cd_command(cwd)} || exit 1; " if os.name == "nt" else ""
+        wrapped = f"{cd_prefix}{{ {command}\n}}; __rc=$?; {pwd_writes}; exit $__rc"
         try:
+            run_kwargs: dict[str, Any] = {}
+            if os.name != "nt":
+                run_kwargs["cwd"] = str(cwd)
             completed = subprocess.run(
                 ["bash", "-lc", wrapped],
-                cwd=str(cwd),
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout_s,
+                **run_kwargs,
             )
         except subprocess.TimeoutExpired:
             return ToolResult(
@@ -207,13 +253,13 @@ def _bash_call(tool_input: dict[str, Any], context: ToolContext) -> ToolResult:
             final_cwd_text = ""
     finally:
         try:
-            _os.unlink(cwd_path)
+            os.unlink(cwd_path)
         except OSError:
             pass
 
     if final_cwd_text:
         try:
-            new_cwd = context.ensure_allowed_path(final_cwd_text)
+            new_cwd = context.ensure_allowed_path(_path_from_bash_pwd(final_cwd_text))
             if new_cwd.exists() and new_cwd.is_dir():
                 context.cwd = new_cwd
                 cwd = new_cwd

@@ -55,7 +55,6 @@ class TestClaudeCodeToolParity(unittest.TestCase):
             "TaskOutput",
             "TaskStop",
             "TaskUpdate",
-            "TodoWrite",
             "ToolSearch",
             "WebFetch",
             "WebSearch",
@@ -71,27 +70,6 @@ class TestClaudeCodeToolParity(unittest.TestCase):
             self.ctx,
         ).output
         self.assertEqual(out["matches"], ["Read"])
-
-    def test_todo_write_roundtrip(self) -> None:
-        out1 = self.registry.dispatch(
-            ToolCall(
-                name="TodoWrite",
-                input={"todos": [{"content": "x", "status": "pending", "activeForm": "Doing x"}]},
-            ),
-            self.ctx,
-        ).output
-        self.assertEqual(out1["oldTodos"], [])
-        self.assertEqual(len(out1["newTodos"]), 1)
-        self.assertEqual(len(self.ctx.todos), 1)
-
-        self.registry.dispatch(
-            ToolCall(
-                name="TodoWrite",
-                input={"todos": [{"content": "x", "status": "completed", "activeForm": "Did x"}]},
-            ),
-            self.ctx,
-        )
-        self.assertEqual(self.ctx.todos, [])
 
 if __name__ == "__main__":
     unittest.main()

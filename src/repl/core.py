@@ -257,7 +257,6 @@ _TASK_WIDGET_TOOL_NAMES: set[str] = {
     "TaskUpdate",
     "TaskList",
     "TaskGet",
-    "TodoWrite",
 }
 
 
@@ -306,9 +305,9 @@ class SocratesREPL:
         sessions_dir: Path | None = None,
         resume_session_id: str | None = None,
     ):
-        # Mark this process as running an interactive session BEFORE we build
-        # the tool registry. Tools like TaskCreate / TaskUpdate / TodoWrite
-        # toggle themselves on/off via ``is_todo_v2_enabled()`` which reads
+        # Mark this process as running an interactive session before we build
+        # the tool registry, so process-level consumers can still distinguish
+        # REPL sessions from programmatic runs.
         from src.bootstrap.state import set_is_interactive
 
         set_is_interactive(True)
@@ -1459,18 +1458,6 @@ class SocratesREPL:
                 return f"Task #{t.get('id')}: {t.get('subject')} ({t.get('status')})"
             return "Task not found"
 
-        if tool_name == "TodoWrite":
-            if parsed:
-                new = parsed.get("newTodos") or []
-                done = sum(1 for t in new if t.get("status") == "completed")
-                in_prog = sum(1 for t in new if t.get("status") == "in_progress")
-                pending = sum(1 for t in new if t.get("status") == "pending")
-                return (
-                    f"{len(new)} todo{'' if len(new) == 1 else 's'} "
-                    f"({done} done, {in_prog} in progress, {pending} open)"
-                )
-            return "Todos updated"
-
         if not raw or len(raw) < 80:
             return raw or "done"
         lines = raw.rstrip("\n").split("\n")
@@ -1618,7 +1605,7 @@ class SocratesREPL:
         return text
 
     # ------------------------------------------------------------------
-    # Task widget (coalesced Task* / TodoWrite snapshot)
+    # Task widget (coalesced Task* snapshot)
     # ------------------------------------------------------------------
     #
     # printing one bullet per ``TaskCreate``/``TaskUpdate`` call, we wait
@@ -1626,8 +1613,7 @@ class SocratesREPL:
     # the current task-state once.
 
     def _render_task_snapshot(self) -> None:
-        """Print a compact snapshot of the current task / todo list."""
-        # Prefer V2 tasks (interactive mode); fall back to V1 todos.
+        """Print a compact snapshot of the current task list."""
         tasks = self._collect_task_entries()
         if not tasks:
             return
@@ -1686,12 +1672,7 @@ class SocratesREPL:
             )
 
     def _collect_task_entries(self) -> list[dict[str, Any]]:
-        """Return a normalised list of task dicts from the tool context.
-
-        Uses V2 ``tasks`` if populated, otherwise falls back to the V1
-        ``todos`` list written by ``TodoWrite``. Both are coalesced into
-        the same shape: ``{id, status, subject, owner?, blockedBy?}``.
-        """
+        """Return a normalised list of task dicts from the tool context."""
         entries: list[dict[str, Any]] = []
         v2 = getattr(self.tool_context, "tasks", None) or {}
         if isinstance(v2, dict) and v2:
@@ -1706,18 +1687,6 @@ class SocratesREPL:
                     "blockedBy": list(t.get("blockedBy") or []),
                 })
             return entries
-
-        todos = getattr(self.tool_context, "todos", None) or []
-        for td in todos:
-            if not isinstance(td, dict):
-                continue
-            entries.append({
-                "id": str(td.get("id", "")),
-                "status": td.get("status", "pending"),
-                "subject": td.get("content") or td.get("activeForm") or "",
-                "owner": None,
-                "blockedBy": [],
-            })
         return entries
 
     def _display_cwd(self) -> str:
@@ -2415,7 +2384,7 @@ class SocratesREPL:
                 last_text_was_printed = False
                 api_call_count = 0
                 tool_use_map: dict[str, tuple[str, dict]] = {}
-                # Track whether a Task*/TodoWrite round is "in flight" so we
+                # Track whether a Task* round is "in flight" so we
                 # can coalesce a run of task-management calls into a single
                 # TaskListV2-style snapshot instead of dumping one ``-` bullet
                 # ``reference UI components/TaskListV2.tsx``, which re-renders

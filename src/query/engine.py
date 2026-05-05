@@ -13,6 +13,9 @@ from ..types.messages import (
 )
 from ..tool_system.build_tool import Tools
 from ..tool_system.context import ToolContext
+from ..plan_mode_policy import (
+    PLAN_MODE_RESTRICTED_TOOL_NAMES,
+)
 from ..tool_system.registry import ToolRegistry
 from ..utils.abort_controller import AbortController, create_abort_controller
 from ..providers.base import BaseProvider
@@ -99,13 +102,16 @@ class QueryEngine:
             else:
                 # Per-tool prompts are NOT in the system prompt — they're sent
                 # via the API tools parameter (tool.prompt() → description).
-                # TODO(plan-mode): thread ToolContext.plan_mode into the query
-                # loop so plan mode updates the system prompt and tool policy
-                # on follow-up turns. Today EnterPlanMode/ExitPlanMode toggle
-                # context.plan_mode, but the main loop does not consume it.
+                plan_mode = bool(getattr(self._config.tool_context, "plan_mode", False))
                 full_prompt = build_full_system_prompt(
                     cwd=cwd,
                     append_system_prompt=self._config.append_system_prompt,
+                    plan_mode=plan_mode,
+                    tool_restrictions=(
+                        list(PLAN_MODE_RESTRICTED_TOOL_NAMES)
+                        if plan_mode
+                        else None
+                    ),
                 )
                 prompt_sections = [full_prompt] if full_prompt else parts.default_system_prompt
                 if not full_prompt and self._config.append_system_prompt:
