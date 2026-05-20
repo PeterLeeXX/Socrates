@@ -1,56 +1,52 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "socrates"
 version = "0.1.0"
-description = "A production-oriented Python rebuild of Claude Code - real architecture, reliable CLI agent"
+description = "AI coding agent CLI that works with any LLM - DeepSeek, Qwen, GPT, Claude, Gemini, local models, you name it"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    {name = "Socrates Team", email = "team@example.com"}
+    { name = "Yufeng He", email = "40085740+he-yufeng@users.noreply.github.com" },
 ]
-keywords = ["claude", "cli", "ai", "llm", "anthropic", "openai", "glm"]
+keywords = ["ai", "coding", "agent", "llm", "cli", "deepseek", "qwen", "claude", "gpt"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
 ]
-
 dependencies = [
-    "anthropic",
-    "openai",
-    "zhipuai",
-    "python-dotenv",
-    "rich",
-    "prompt-toolkit",
-    "tiktoken>=0.7.0",
+    "ag-ui-protocol",
+    "litellm>=1.40.0",
+    "rich>=13.0",
+    "prompt_toolkit>=3.0",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "build>=1.0.0",
-    "twine>=5.0.0",
-    "pytest>=8.0.0",
+    "pytest>=7.0",
+    "ruff>=0.4",
 ]
 
 [project.scripts]
-socrates = "src.cli:main"
+socrates = "socrates.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/PeterLeeXX/Socrates"
 Repository = "https://github.com/PeterLeeXX/Socrates"
-Documentation = "https://github.com/PeterLeeXX/Socrates#readme"
+Issues = "https://github.com/PeterLeeXX/Socrates/issues"
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["src*"]
+[tool.ruff]
+line-length = 100
+target-version = "py310"
